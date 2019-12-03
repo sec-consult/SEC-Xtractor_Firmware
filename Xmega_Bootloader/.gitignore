@@ -1,0 +1,8 @@
+*.atsuo
+Xmega_Bootloader.eep
+Xmega_Bootloader.elf
+Xmega_Bootloader.hex
+Xmega_Bootloader.lss
+Xmega_Bootloader.map
+*.o
+*.d
