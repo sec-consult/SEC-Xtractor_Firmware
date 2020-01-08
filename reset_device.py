@@ -14,7 +14,8 @@ import serial
 import time
 
 ser = serial.Serial(sys.argv[1], int(sys.argv[2]))
-for c in b'\r\rreset\r':
+# send BREAK,BREAK,BREAK,"reset",CR
+for c in (b'\x03\x03\x03reset\r'):
     time.sleep(.05)
     ser.write(c)
     ser.flush()

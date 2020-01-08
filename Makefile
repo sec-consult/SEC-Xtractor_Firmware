@@ -75,9 +75,11 @@ programmer-alive:
 	$(AVRDUDE_USB)
 
 reset-device:
-	#python reset_device.py $(SERIAL_PORT) $(BAUD)
+	echo "!!!!! NOW PRESS AND HOLD THE BUTTON LABELED 'BOOT' TO ENTER BOOTLOADER !!!"
+	sleep 2
+	python reset_device.py $(SERIAL_PORT) $(BAUD)
 	# wait for bootloader
-	#sleep 1
+	sleep 1
 
 bootloader-alive: reset-device
 	$(AVRDUDE_SERIAL)
