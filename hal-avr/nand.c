@@ -347,7 +347,7 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc)
 	uint32_t block = 0x00;
 	uint32_t page = 0x00;
 	dumpStart();
-	while (block < params->block_per_logic_unit && !uartHasInput())
+	while (block < params->block_per_logic_unit && !isOperationCanceled())
 	{ 
 		NAND_IO_PORT0.OUT = 0x00;
 		NAND_IO_PORT1.OUT = 0x00;
@@ -379,7 +379,7 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc)
 		uint32_t total_bytes = params->bytes_per_page +(read_ecc*params->spare_bytes_per_page);
 		total_bytes = total_bytes / (supports_x16+1);
 		
-		for (int i = 0; i < total_bytes && !uartHasInput(); ++i)
+		for (int i = 0; i < total_bytes && !isOperationCanceled(); ++i)
 		{
 			uint8_t temp_high = 0;
 			uint8_t temp_low = 0;

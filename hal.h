@@ -39,6 +39,7 @@ static inline void portSetDirection(xtractor_port_t *port, uint8_t mask);
 
 #pragma region UART functionality
 static inline uint8_t uartHasInput(void);
+static inline uint8_t uartPeekInput(void);
 static inline uint8_t uartGetInput(void);
 static inline void uartInit(void);
 static inline void uartprintf(char *fmt, ...);

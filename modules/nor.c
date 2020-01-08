@@ -59,7 +59,7 @@ static inline void norDump(uint8_t endianess, uint8_t word_mode)
 	dumpStart();
 
 
-	for (uint64_t address = 0x0; address < NOR_READ_LENGTH && !uartHasInput(); ++address)
+	for (uint64_t address = 0x0; address < NOR_READ_LENGTH && !isOperationCanceled(); ++address)
 	{
 		uint16_t data;
 		norStartReadData();

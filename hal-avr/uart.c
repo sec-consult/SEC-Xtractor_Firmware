@@ -38,18 +38,35 @@ ISR(USARTE0_TXC_vect)
 	sevensegShowChar('B');
 }
 
+static inline void checkUartFlowControl()
+{
+	if(uart_has_input && uart_rx_byte == CHAR_XOFF){
+		uart_has_input = 0; // consume XOFF char
+		
+		// XOFF (or any other char) causes output to continue
+		while(!uart_has_input) {}
+		uart_has_input = 0;
+	}
+}
+
 inline uint8_t uartHasInput()
 {
-	if (uart_has_input)
+	uint8_t result = 0;
+	if (uart_has_input && uart_rx_byte != CHAR_XOFF)
 	{
-		return 1;
+		result = 1;
 	}
-	return 0;
+	return result;
 }
 
 inline uint8_t uartGetInput(void)
 {
 	uart_has_input = 0;
+	return uart_rx_byte;
+}
+
+inline uint8_t uartPeekInput(void)
+{
 	return uart_rx_byte;
 }
 
@@ -81,6 +98,9 @@ static inline void uartInit(void)
  */
 static inline void uartWriteChar(char c)
 {
+	// before writing data, check that receiver wants data
+	checkUartFlowControl(); 
+
 	PORTQ.DIRSET = PIN3_bm;
 	PORTQ.OUTSET = PIN3_bm;
 	//while(!(USARTE0.STATUS & USART_DREIF_bm));

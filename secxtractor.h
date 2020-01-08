@@ -24,6 +24,8 @@
 #pragma region utility stuff
 #define OUTPUT_BOUNDARY "-----------------------" NL
 #define OUTPUT_BOUNDARY_THICK "=======================" NL
+#define DUMP_BEGIN_MARKER "---- BEGIN DUMP ----" NL 
+#define DUMP_END_MARKER "---- END DUMP ----" NL 
 
 #define NOP2  {NOP; NOP;}
 #define NOP3  {NOP; NOP; NOP;}
@@ -52,6 +54,16 @@
 
 #define NOR_READ_LENGTH 0x200000
 #pragma endregion
+
+#define CHAR_BELL 0x07
+#define CHAR_TAB 0x09
+#define CHAR_XOFF 0x13
+#define CHAR_XON 0x11
+#define CHAR_BREAK 0x03
+#define CHAR_BACKSPACE 0x08
+#define CHAR_DEL 0x7f
+#define CHAR_CR 0x0D
+#define CHAR_LF 0x0A
 
 #pragma region ID codes
 /*! \brief General chip detection mask table. */
@@ -108,6 +120,7 @@
 static inline void dumpStart();
 static inline void dumpByte(uint8_t b);
 static inline void dumpEnd();
+static inline int isOperationCanceled();
 #pragma endregion
 
 // Once you have found the JTAG pins you can define
@@ -164,6 +177,8 @@ uint8_t debug = 0;
 uint8_t DELAY = 0;
 long DELAYUS = 5000; // 5 Milliseconds
 uint8_t PULLUP = 0;
+uint8_t cancelCurrentOperation = 0;
+uint8_t dumpFast = 0;
 
 #define NAND_ALE (1 << 4)
 #define NAND_CLE (1 << 5)

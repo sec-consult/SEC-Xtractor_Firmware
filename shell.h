@@ -16,9 +16,6 @@
 
 #define SHELL_LINE_MAX_LENGTH 256
 
-#define CHAR_BACKSPACE 0x08
-#define CHAR_ENTER 0x0D
-
 void shellInit(void);
 static void shell(char character);
 
@@ -26,11 +23,13 @@ typedef void (shell_command_callback_t)(char *arguments);
 
 typedef struct {
     char *commandPrefix;
+    char *usage;
+    char *helptext;
     shell_command_callback_t* callback;
 } shell_command_t;
 
-#define SHELL_COMMAND(prefix, callback) {(prefix), (&callback)}
-#define END_OF_COMMANDS() {(NULL), (NULL)}
+#define SHELL_COMMAND(prefix, callback, usage, helptext) {(prefix), (usage), (helptext), (&callback)}
+#define END_OF_COMMANDS() {(NULL), (NULL), (NULL), (NULL)}
 
 #define IS_END_OF_COMMANDS(sc) ((sc)->commandPrefix == NULL)
 

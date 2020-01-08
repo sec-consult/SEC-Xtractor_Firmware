@@ -18,30 +18,54 @@ uint64_t dumpPosition;
 static inline void dumpStart()
 {
 	dumpPosition = 0;
-	uartWriteString("Begin Dump:" NL " ");
-	uartWriteString(OUTPUT_BOUNDARY_THICK);
+	uartWriteString(DUMP_BEGIN_MARKER);
 }
+
+const char* hexChars = "0123456789ABCDEF";
 
 static inline void dumpByte(uint8_t b)
 {
-	if(dumpPosition != 0){
+	if(dumpFast){
+		if(dumpPosition % 1024 == 0){ // write 1K bytes per line
+			uartWriteString(NL);
+		}
+	}
+	else
+	{
 		if (dumpPosition % 4 == 0)
 		{
 			uartWriteChar(' ');
 		}
-		
-		if (dumpPosition % 16 == 0)
-		{
-			uartWriteString(NL " ");
+		if(dumpPosition != 0){
+			if (dumpPosition % 16 == 0)
+			{
+				uartWriteString(NL " ");
+			}
 		}
 	}
-	uartprintf("%02X", b);
+	uartWriteChar(hexChars[b >> 4]);
+	uartWriteChar(hexChars[b & 0xF]);
 	dumpPosition++;
 }
 
 static inline void dumpEnd()
 {
-	uartWriteString(NL OUTPUT_BOUNDARY_THICK NL);
+	uartWriteString(NL DUMP_END_MARKER);
+}
+
+static inline int isOperationCanceled()
+{
+	if(cancelCurrentOperation)
+	{
+		return 1;
+	}
+
+	if(uartHasInput() && uartGetInput() == CHAR_BREAK){
+		cancelCurrentOperation = 1;
+		uartWriteString(NL OUTPUT_BOUNDARY_THICK "Cancelling..." NL);
+		return 1;
+	}
+	return 0;
 }
 
 /**

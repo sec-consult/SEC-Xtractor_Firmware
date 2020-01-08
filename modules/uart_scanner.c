@@ -38,7 +38,7 @@ void cmdUartScanner(char *arguments)
     //PORTQ.DIRSET = PIN3_bm;
     initTimer();
     initScan(pin_cnt);
-    while(!uartHasInput()){
+    while(!isOperationCanceled()){
         volatile scanner_result_t* result = getChanges();
 
         //uartprintf("Pin:\tCnt:\tHigh(%%)\tBaud"NL);
