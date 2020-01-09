@@ -81,7 +81,7 @@ class XtractorTransformation(Transform):
                         self.byte_count / KB / (time.time() - self.start_timestamp))
 
         elif line == DUMP_BEGIN_MARKER:
-            self.destination_file = tempfile.NamedTemporaryFile(delete=False)
+            self.destination_file = tempfile.NamedTemporaryFile(delete=False, dir='.', suffix='.xtractor')
             self.byte_count = 0
             self.start_timestamp = time.time()
             return "Receiving dump ('{0}')...".format(self.destination_file.name)
