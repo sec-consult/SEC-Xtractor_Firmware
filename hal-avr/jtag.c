@@ -140,7 +140,7 @@ void jtagTapState(char jtagTapState[], int tck, int tms)
 {
 	while (*jtagTapState)
 	{ // exit when string \0 terminator encountered
-		if (DELAY)
+		if (jtagDelay)
 			_delay_us(50);
 		jtagWritePin(tck, 0);
 		jtagWritePin(tms, *jtagTapState - '0'); // conv from ascii pattern
@@ -212,7 +212,7 @@ static void jtagPulseTms(int tck, int tms, int s_tms)
 
 static void jtagPulseTdi(int tck, int tdi, int s_tdi)
 {
-	if (DELAY)
+	if (jtagDelay)
 		_delay_us(50);
 	if (tck != IGNOREPIN)
 		jtagWritePin(tck, 0);
@@ -224,7 +224,7 @@ static void jtagPulseTdi(int tck, int tdi, int s_tdi)
 uint8_t jtagPulseTdo(int tck, int tdo)
 {
 	uint8_t tdo_read;
-	if (DELAY)
+	if (jtagDelay)
 		_delay_us(50);
 	jtagWritePin(tck, 0); // read in TDO on falling edge
 	tdo_read = jtagReadPin(tdo);

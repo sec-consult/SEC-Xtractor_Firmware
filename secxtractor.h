@@ -116,6 +116,62 @@
 
 #pragma endregion
 
+#pragma region ONFI
+#define ONFI_CMD_READ_ID 0x90
+#define ONFI_CMD_RESET 0xFF
+#define ONFI_CMD_BLOCK_ERASE_CYCLE_1 0x60
+#define ONFI_CMD_BLOCK_ERASE_CYCLE_2 0xd0
+#define ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_1 0x80
+#define ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_2 0x10
+#define ONFI_CMD_READ_STATUS 0x70
+#define ONFI_CMD_READ_PARAMETER_PAGE 0xEC
+#define ONFI_CMD_READ_CYCLE_1 0x00
+#define ONFI_CMD_READ_CYCLE_2 0x30
+
+#define ONFI_FEATURE_16_BIT_BUS (1<<0)
+#define ONFI_FEATURE_MULTIPLE_LUNS (1<<1)
+#define ONFI_FEATURE_NON_SEQ_PAGE_PROG (1<<2)
+#define ONFI_FEATURE_MULTI_PLANE_PROG_ERASE (1<<3)
+#define ONFI_FEATURE_ODD_EVEN_PAGE_COPYBACK (1<<4)
+#define ONFI_FEATURE_NV_DDR (1<<5)
+#define ONFI_FEATURE_MULTI_PLANE_READ (1<<6)
+#define ONFI_FEATURE_EXTENDED_PARAMETER_PAGE (1<<7)
+#define ONFI_FEATURE_PROGRAM_PAGE_REGISTER_CLEAR_ENHANCEMENT (1<<8)
+#define ONFI_FEATURE_EZ_NAND (1<<9)
+#define ONFI_FEATURE_NV_DDR2 (1<<10)
+#define ONFI_FEATURE_VOLUME_ADDRESSING (1<<11)
+#define ONFI_FEATURE_EXT_VPP (1<<12)
+#define ONFI_FEATURE_NV_DDR3 (1<<13)
+#define ONFI_FEATURE_ZQ_CALIBRATION (1<<14)
+#define ONFI_FEATURE_PACKAGE_ELECTRICAL_SPEC (1<<15)
+
+typedef struct {
+    uint16_t mask;
+    char* description;
+} onfi_feature_description_t;
+
+onfi_feature_description_t onfi_feature_descriptions[] = {
+    {ONFI_FEATURE_16_BIT_BUS, "16 bit bus"},
+    {ONFI_FEATURE_MULTIPLE_LUNS, "Multiple LUNs"},
+    {ONFI_FEATURE_NON_SEQ_PAGE_PROG, "Non-sequential page programming"},
+    {ONFI_FEATURE_ODD_EVEN_PAGE_COPYBACK, "Odd to even page Copyback"},
+    {ONFI_FEATURE_MULTI_PLANE_PROG_ERASE, "Multi-plane program and erase operations"},
+    {ONFI_FEATURE_MULTI_PLANE_READ, "Multi-plane read operations"},
+    {ONFI_FEATURE_NV_DDR, "NV-DDR"},
+    {ONFI_FEATURE_NV_DDR2, "NV-DDR2"},
+    {ONFI_FEATURE_NV_DDR3, "NV-DDR3"},
+    {ONFI_FEATURE_EXTENDED_PARAMETER_PAGE, "Extended parameter page"},
+    {ONFI_FEATURE_PROGRAM_PAGE_REGISTER_CLEAR_ENHANCEMENT, "Program page register clear enhancement"},
+    {ONFI_FEATURE_EZ_NAND, "EZ NAND"},
+    {ONFI_FEATURE_VOLUME_ADDRESSING, "Volume addressing"},
+    {ONFI_FEATURE_EXT_VPP, "External Vpp"},
+    {ONFI_FEATURE_ZQ_CALIBRATION, "ZQ Calibration"},
+    {ONFI_FEATURE_PACKAGE_ELECTRICAL_SPEC, "Package Electrical Specification"},
+    {0, NULL}
+};
+
+#pragma endregion
+
 #pragma region dump methods
 static inline void dumpStart();
 static inline void dumpByte(uint8_t b);
@@ -174,8 +230,9 @@ static char pattern[PATTERN_LEN] = "0110011101001101101000010111001001";
 #define IGNOREPIN 0xFFFF
 // Flags configured by UI:
 uint8_t debug = 0;
-uint8_t DELAY = 0;
-long DELAYUS = 5000; // 5 Milliseconds
+uint8_t jtagDelay = 0;
+long jtagDelayTime = 5000; // 5 Milliseconds
+long nandDelayTime = 0;
 uint8_t PULLUP = 0;
 uint8_t cancelCurrentOperation = 0;
 uint8_t dumpFast = 0;

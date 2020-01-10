@@ -106,16 +106,18 @@ typedef struct {
     uint16_t integrity_crc;
 } onfi_param_page_t;
 
-typedef struct{
-    onfi_param_page_t param_page[3];
-} onfi_param_page_full_t;
+typedef struct {
+    onfi_param_page_t params;
+    char chipId[5];
+} onfi_infos_t;
+
 static inline void nandReset();
 static inline void nandInit();
 static inline void nandReadONFI(uint8_t result[]);
 static inline void nandReadChipID(uint8_t result[]);
 static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern,uint8_t write_ecc);
-static inline void onfiReadParameters(onfi_param_page_full_t *params);
-static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc);
+static inline int onfiReadAndCheckParameters(onfi_param_page_t *params);
+static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uint8_t verify_read);
 static inline void initOnfiParam();
 static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progress);
 #pragma endregion

@@ -122,7 +122,7 @@ shell_command_t commands[] = {
 	SHELL_COMMAND("loopback check", cmdLoopbackCheck, "", ""),
 	SHELL_COMMAND("ir len set", cmdIrLenSet, "[number_in_the_range_from_1_to_40]", ""),
 	SHELL_COMMAND("flashsize set", cmdFlashsizeSet, "", ""),
-	SHELL_COMMAND("delay", cmdDelay, "[+/-]", 
+	SHELL_COMMAND("delay jtag", cmdDelayJtag, "[+/-]", 
 		"No arguments: Slows down the JTAG scan." HELPNL
 		"With arguments + or -: Reduces or increases the scan delay by 1000us"),
 	SHELL_COMMAND("irenum", cmdIrEnum, "", 
@@ -138,6 +138,11 @@ shell_command_t commands[] = {
 		"Reads the ONFI parameter page of the NAND memory. These values are required for further communication with the flash memory."),
 	SHELL_COMMAND("erase nand", cmdEraseNand, "", 
 		"Erases all content from the NAND memory."),
+	SHELL_COMMAND("delay nand", cmdDelayNand, "[delay iterations]", 
+		"Allows waiting a specified amount of time before expecting NAND chip to have received a request." HELPNL
+		"May improve reliability." HELPNL
+		"No arguments: Shows current  delay." HELPNL
+		"With arguments: Sets delay [in loop iterations]"),
 	/* NOR */
 	SHELL_COMMAND("dump nor", cmdDumpNor, "[endianess (1/0)] [enable word mode (1/0)]", ""),
 	//SHELL_COMMAND("write nor pattern", cmdNorPattern),

@@ -329,7 +329,7 @@ static inline void ir_state(char state[], int tck, int tms, int tdi)
 #endif
 	for (int i = 0; i < set_ir_len; i++)
 	{
-		if (DELAY)
+		if (jtagDelay)
 			DELAY_US(50);
 		// TAP/TMS changes to Exit IR state (1) must be executed
 		// at same time that the last TDI bit is sent:
@@ -554,36 +554,35 @@ void cmdFlashsizeSet(char *arguments)
 }
 
 
-void cmdDelay(char *arguments)
+void cmdDelayJtag(char *arguments)
 {
-
 	if (*arguments == '-')
 	{
 		uartWriteString("");
-		if (DELAYUS != 0 && DELAYUS > 1000)
-			DELAYUS -= 1000;
-		else if (DELAYUS != 0 && DELAYUS <= 1000)
-			DELAYUS -= 100;
-		uartprintf("Delay microseconds: %ld" NL, DELAYUS);
+		if (jtagDelayTime != 0 && jtagDelayTime > 1000)
+			jtagDelayTime -= 1000;
+		else if (jtagDelayTime != 0 && jtagDelayTime <= 1000)
+			jtagDelayTime -= 100;
+		uartprintf("Delay microseconds: %ld" NL, jtagDelayTime);
 	}
 	else if (*arguments == '-')
 	{
-		if (DELAYUS < 1000)
-			DELAYUS += 100;
+		if (jtagDelayTime < 1000)
+			jtagDelayTime += 100;
 		else
-			DELAYUS += 1000;
-		uartprintf("Delay microseconds: %ld" NL, DELAYUS);
+			jtagDelayTime += 1000;
+		uartprintf("Delay microseconds: %ld" NL, jtagDelayTime);
 	}
 	else
 	{
-		DELAY = ~DELAY;
-		if (DELAY)
+		jtagDelay = ~jtagDelay;
+		if (jtagDelay)
 		{
-			uartWriteString("DELAY ON" NL);
+			uartWriteString("JTAG DELAY ON" NL);
 		}
 		else
 		{
-			uartWriteString("DELAY OFF" NL);
+			uartWriteString("JTAG DELAY OFF" NL);
 		}
 	}
 }
