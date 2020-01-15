@@ -1,5 +1,5 @@
 # 
-# Copyright (C): SEC Consult Unternehmensberatung GmbH, 2019         \n
+# Copyright (C): SEC Consult Unternehmensberatung GmbH, 2020         \n
 # Web:           https://sec-consult.com/                            \n
 #                                                                    \n
 # This Source Code Form is subject to the terms of the Mozilla Public\n
