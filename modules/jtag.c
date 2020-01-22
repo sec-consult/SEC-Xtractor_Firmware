@@ -184,9 +184,9 @@ static void loopbackTest(int pins[])
 
 
 static inline const char* getVendor(uint32_t idcode)
-{
-	uint32_t temp_idcode = 0 >> (idcode & IDCODE_MASK_GENERIC);
-
+{	
+	uint8_t temp_idcode = (uint8_t)(idcode >> 1);
+	uartprintf("test");
 	switch (temp_idcode)
 	{
 	case IDCODE_MASK_ATMEL: return "ATMEL";
@@ -209,6 +209,14 @@ static inline const char* getVendor(uint32_t idcode)
 	case IDCODE_MASK_RCA: return "RCA";
 	case IDCODE_MASK_RAYTHEON: return "Raytheon";
 	case IDCODE_MASK_CONEXANT: return "Conexant";
+	case IDCODE_MASK_SEEQ: return "Seeq";
+	case IDCODE_MASK_NXP: return "NXP";
+	case IDCODE_MASK_SYNERTEK: return "Synertek";
+	case IDCODE_MASK_TEXAS_INSTRUMENTS: return "Texas Instruments";
+	case IDCODE_MASK_TOSHIBA: return "Toshiba";
+	case IDCODE_MASK_XICOR: return "Xicor";
+	case IDCODE_MASK_ZILOG: return "Zilog";
+	case IDCODE_MASK_MARVELL_SEMICONDUCTORS: return "Marvell";
 	default: return "UNKNOWN";
 	}
 }
