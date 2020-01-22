@@ -124,6 +124,7 @@ static inline void onfiDataIn(uint8_t data_low, uint8_t data_high)
 	NAND_IO_PORT0.OUT = data_low;
 	NAND_IO_PORT1.OUT = data_high;
 	NAND_WE_HIGH();
+	NOP;
 }
 
 /**
