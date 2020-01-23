@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # 
 # Copyright (C): SEC Consult Unternehmensberatung GmbH, 2020         \n
 # Web:           https://sec-consult.com/                            \n

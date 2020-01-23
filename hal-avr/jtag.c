@@ -177,7 +177,7 @@ void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen)
 
 static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst)
 {
-	char *buffer = calloc(1, 6);
+	uint8_t buffer[6];
 	if (ntrst != IGNOREPIN)
 	{
 		uartWriteString("ntrst:\tA");
