@@ -33,4 +33,9 @@ typedef struct {
 
 #define IS_END_OF_COMMANDS(sc) ((sc)->commandPrefix == NULL)
 
+#define CLEAN_SCREEN() {uartWriteChar(27);\
+                        uartWriteString("[2J");\
+                        uartWriteChar(27);\
+                        uartWriteString("[H");}
+
 #endif

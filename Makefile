@@ -16,7 +16,7 @@ LDFLAGS=-mmcu=atxmega128a1 -g
 
 PLATFORM=x128a1
 
-SERIAL_PORT=/dev/ttyUSB0
+SERIAL_PORT=/dev/ttyUSB3
 BAUD=4000000
 
 AVRDUDE_USB=avrdude -p $(PLATFORM) -P usb -c atmelice_pdi 
@@ -29,6 +29,15 @@ FUSE1=0x00
 FUSE2=0x9F
 FUSE4=0xFE
 FUSE5=0xFF
+
+################################################################################
+## Test for Flags                                                             ##
+## -e	Enable ANSI Escape Sequence Support                                   ##
+################################################################################
+consume_flags:
+ifneq ($(findstring e, $(MAKEFLAGS)),)
+CCFLAGS+= -DESCAPE_CODE_SUPPORTED
+endif
 
 ################################################################################
 ## GENERAL/MISC                                                               ##
@@ -50,13 +59,13 @@ test: main-test
 main.hex: main.bin
 	avr-objcopy -j .text -j .data -O ihex $^ $@
 
-main.bin: $(SRC_FILES_AVR)
+main.bin: consume_flags $(SRC_FILES_AVR)
 	$(CC) $(CCFLAGS) main.c -o $@
 
-main.o: $(SRC_FILES_AVR)
+main.o: consume_flags $(SRC_FILES_AVR)
 	$(CC) $(CCFLAGS) -c main.c -o $@
 
-hal-avr: $(SRC_FILES_AVR)
+hal-avr: consume_flags $(SRC_FILES_AVR)
 	$(CC) $(CCFLAGS) -c $(SRC_FILES_AVR) -o $^
 
 main.elf: $(OBJECTS)

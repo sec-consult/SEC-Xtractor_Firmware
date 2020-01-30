@@ -149,7 +149,7 @@ shell_command_t commands[] = {
 	/* SPI */
 	SHELL_COMMAND("spi dump", cmdSpiDump, "", ""),
 	/* UART */
-	SHELL_COMMAND("uart scanner", cmdUartScanner, "<pinlen>", 
+	SHELL_COMMAND("uart scanner", cmdUartScanner, "", 
 		"Scans for toggling pins which are hold high during idle times. This indicates the presence of a UART bus."),
 	END_OF_COMMANDS()
 };

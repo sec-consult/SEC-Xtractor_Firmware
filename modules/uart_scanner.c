@@ -19,32 +19,26 @@
  */
 void cmdUartScanner(char *arguments)
 {
-    /* Clear Screen */
-    uartWriteChar(27); //ESC
-    uartWriteString("[2J");
-    uartWriteChar(27);
-    uartWriteString("[H");
-    /*Get pin_cnt */
-    uint8_t pin_cnt=0;
-    sscanf(arguments, "%u", &pin_cnt);
-    if(pin_cnt > SCANNER_MAX_PIN_CNT){
-        uartprintf("Too many pins requested. Max %d pins can be scanned at once"NL, SCANNER_MAX_PIN_CNT);
+    #ifdef ESCAPE_CODE_SUPPORTED
+        CLEAN_SCREEN()
+    #endif
+
+    //check for valid pinslen
+    if(pinslen == 0){
+        uartWriteString("Please provide a pinlen first!"NL);
         return;
-    }else if (pin_cnt == 0) {
-        uartprintf("No pin count submitted, defaulting to %d pins"NL, SCANNER_MAX_PIN_CNT);
-        pin_cnt = SCANNER_MAX_PIN_CNT;
     }
 
     //PORTQ.DIRSET = PIN3_bm;
     initTimer();
-    initScan(pin_cnt);
+    initScan(pinslen);
     while(!isOperationCanceled()){
         volatile scanner_result_t* result = getChanges();
 
         //uartprintf("Pin:\tCnt:\tHigh(%%)\tBaud"NL);
         uartprintf("Pin:\tCnt:\tHigh(%%)"NL);
         uartWriteString(OUTPUT_BOUNDARY);
-        for(uint8_t i=0; i<pin_cnt; i++){
+        for(uint8_t i=0; i<pinslen; i++){
             uint8_t high = result[i].time_high/((float)result[i].time_high+result[i].time_low)*100;
             ///TODO: Work on Autobaud feature 
             //uint32_t baud = result[i].shortest_lowtime;
@@ -52,10 +46,8 @@ void cmdUartScanner(char *arguments)
             uartprintf("A%u:\t%"PRIu32 "\t%d%%"NL,i,result[i].pin_changes, high);
         }
         _delay_ms(1000);
-        /* Clear Screen */
-        uartWriteChar(27); //ESC
-        uartWriteString("[2J");
-        uartWriteChar(27);
-        uartWriteString("[H");
+        #ifdef ESCAPE_CODE_SUPPORTED
+            CLEAN_SCREEN()
+        #endif
     }
 }
