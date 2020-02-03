@@ -200,3 +200,427 @@ void cmdDelayNand(char *arguments)
 	}
 	uartprintf("Nand chip delay: %ld iterations" NL, nandDelayTime);
 }
+
+/**
+*@brief	writes a command byte to the nand according to ONFI standard
+*/
+static inline void onfiCommand(uint8_t command)
+{
+	setNandIOValue(0x0000);
+	setNandIODir(OUT);
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	setNandIOValue(command);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+}
+
+/**
+*@brief	inits pins for an address command
+*/
+static inline void onfiAddressStart(void)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_ALE, HIGH);
+	setNandIOValue(0x00FF);
+}
+
+/**
+*@brief	writes an address byte to the nand according to ONFI standard
+*/
+static inline void onfiAddress(uint8_t address)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	setNandIOValue(address);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+}
+
+/**
+*@brief	finishes the address transfer cycle
+*/
+static inline void onfiAddressEnd(void)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+}
+
+/**
+*@brief	prepares pins to receive data from NAND
+*/
+static inline void onfiDataOutStart()
+{
+	setNandIOValue(0x0000);
+	setNandIODir(IN);
+}
+
+/**
+*@brief	receives a byte/word from the NAND
+*/
+static inline void onfiDataOut(uint8_t *out_low, uint8_t *out_high)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_RE, LOW);
+	_delay_32mhz_cycles(10 +nandDelayTime);
+	getNandIOValue(out_low, out_high);
+	setPinValue(&NAND_CTRL_PORT, NAND_RE, HIGH);
+}
+
+/**
+*@brief	prepares pins for a write to the NAND
+*/
+static inline void onfiDataInStart(void)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+}
+
+/**
+*@brief	writes a data byte to the NAND according to ONFI standard
+*/
+static inline void onfiDataIn(uint8_t data_low, uint8_t data_high)
+{
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	setNandIOValue((((uint16_t)data_high)<<8)|data_low);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	_delay_32mhz_cycles(1);
+}
+
+/**
+*@brief	resets the NAND
+*/
+static inline void nandReset()
+{
+	onfiCommand(ONFI_CMD_RESET);
+	_delay_us(5);
+	while(!getNandRB());
+}
+
+/**
+*@brief	Initializes the NAND and the required pins
+*/
+static inline void nandInit()
+{
+	/* set all pins to outputs to issue the first command */
+	setNandIOValue(0x0000);
+	setNandIODir(OUT);
+
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_RE, HIGH);
+	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
+	setPinValue(&NAND_CTRL_PORT, NAND_RB, HIGH);
+	setPinDir(&NAND_CTRL_PORT,(NAND_ALE) | (NAND_CLE) | (NAND_CE) | (NAND_RE) | (NAND_WP) | (NAND_WE), OUT);
+	setPinDir(&NAND_CTRL_PORT, NAND_RB, IN);
+}
+
+/**
+*@brief			reads the ONFI signature
+*@param	result	array where the ONFI chars schould be saved
+*/
+static inline void nandReadONFI(uint8_t result[])
+{
+	uint8_t waste;
+	onfiCommand(ONFI_CMD_READ_ID);
+	onfiAddressStart();
+	onfiAddress(0x20);
+	onfiAddressEnd();
+	onfiDataOutStart();
+	onfiDataOut(&result[0], &waste);
+	onfiDataOut(&result[1], &waste);
+	onfiDataOut(&result[2], &waste);
+	onfiDataOut(&result[3], &waste);
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+}
+
+/**
+*@brief			reads the Chip ID
+*@param	result	array where the Chip ID schould be saved
+*/
+static inline void nandReadChipID(uint8_t *result)
+{
+	uint8_t waste;
+	onfiCommand(ONFI_CMD_READ_ID);
+	onfiAddressStart();
+	onfiAddress(0x00);
+	onfiAddressEnd();
+	onfiDataOutStart();
+	onfiDataOut(&result[0], &waste);
+	onfiDataOut(&result[1], &waste);
+	onfiDataOut(&result[2], &waste);
+	onfiDataOut(&result[3], &waste);
+	onfiDataOut(&result[4], &waste);
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+
+}
+
+/**
+*@brief					Erases the whole NAND
+*@param	params			Pointer to the ONFI parameter page
+*@param enable_progress	Will print dots as progress indication if set to 1
+*/
+static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progress)
+{
+	NAND_IO_PORT0.OUT = 0x00;
+	NAND_IO_PORT1.OUT = 0x00;
+	NAND_IO_PORT0.DIR = 0xFF;
+	NAND_IO_PORT1.DIR = 0xFF;
+	uint8_t page_bits = 255; //Loop counts one bit too much
+	for(uint32_t tmp_pages_per_block = params->pages_per_block;\
+	tmp_pages_per_block != 0; tmp_pages_per_block>>=1){
+		page_bits++;
+	}
+	uint8_t row_cycles = params->address_cycles &0x0f;
+	uint8_t col_cycles = params->address_cycles >> 4;
+	uint32_t block=0;
+	setPinValue(&NAND_CTRL_PORT, NAND_WP, HIGH);
+	while(block<params->block_per_logic_unit){
+		onfiCommand(ONFI_CMD_BLOCK_ERASE_CYCLE_1);
+		onfiAddressStart();
+		uint64_t row_address = (((uint64_t)block)<<page_bits);
+		for(uint8_t i=0; i<row_cycles; i++) {
+			onfiAddress((uint8_t)(row_address>>(i*8)));
+		}
+		onfiAddressEnd();
+		onfiCommand(ONFI_CMD_BLOCK_ERASE_CYCLE_2);
+		NOP3;
+		while(!getNandRB());
+		if(enable_progress & block%20==0){
+			uartWriteChar('.');
+		}
+		++block;
+	}
+	setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
+}
+
+/**
+*@brief				Writes a pattern throughout the whole NAND
+*@param	params		Pointer to the ONFI parameter page
+*@param pattern		pattern to write
+*@param write_ecc	If set to 1, will write through ECC block, otherwise ECC block will be skipped
+*/
+static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, uint8_t write_ecc)
+{
+	uint8_t supports_x16 = params->feature_support & ONFI_FEATURE_16_BIT_BUS;
+	uint8_t row_cycles = params->address_cycles &0x0f;
+	uint8_t col_cycles = params->address_cycles >> 4;
+	uint8_t page_bits = 255; //Loop counts one bit too much
+	for(uint32_t tmp_pages_per_block = params->pages_per_block;\
+	tmp_pages_per_block != 0; tmp_pages_per_block>>=1){
+		page_bits++;
+	}
+
+	uint32_t block = 0x00;
+	uint32_t page = 0x00;
+	uint32_t pagesize = params->bytes_per_page +(write_ecc*params->spare_bytes_per_page);
+	pagesize = pagesize / (supports_x16+1);
+
+	onfiEraseAll(params, 0);
+
+	while (block < params->block_per_logic_unit){ 
+		setPinValue(&NAND_CTRL_PORT, NAND_WP, HIGH);
+		onfiCommand(ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_1);
+		onfiAddressStart();
+		for(uint8_t i=0; i<col_cycles; ++i){
+			onfiAddress(0x00);
+		}
+		uint64_t row_address = page;
+		row_address |= (((uint64_t)block)<<page_bits);
+		for(uint8_t i=0; i<row_cycles; i++) {
+			onfiAddress((uint8_t)(row_address>>(i*8)));
+		}
+		onfiAddressEnd();
+		NOP2;
+		onfiDataInStart();
+		for (int i = 0; i < pagesize; i++)
+		{
+			if(supports_x16){
+				onfiDataIn((uint8_t) pattern,(uint8_t) (pattern >> 8));
+			}else{
+				if(i%2){
+					onfiDataIn((uint8_t) pattern, 0);
+				}else{
+					onfiDataIn((uint8_t) pattern>>8, 0);
+				}
+			}
+		}
+		onfiCommand(ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_2);
+		_delay_us(10);
+		while(!getNandRB());
+		onfiCommand(ONFI_CMD_READ_STATUS);
+		uint8_t temp1, temp2;
+		onfiDataOut(&temp1, &temp2);
+		setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+		setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
+		page++;
+		if (page == 64)
+		{
+			page = 0;
+			block++;
+		}
+		if(page==0 && block%10==0){
+			uartWriteChar('.');
+		}
+	}
+	uartprintf("done"NL);
+}
+
+/**
+*@brief			Reads the ONFI parameters
+*@param	params	Pointer to an empty full parameter page
+*/
+static inline int onfiReadAndCheckParameters(onfi_param_page_t *params)
+{
+	uint8_t tmp;
+	int result = 0;
+	uint8_t *data = (uint8_t*) params;
+	uint8_t waste;
+
+	onfiCommand(ONFI_CMD_READ_PARAMETER_PAGE);
+	onfiAddressStart();
+	onfiAddress(0x00);
+	onfiAddressEnd();
+	onfiDataOutStart();
+	
+	_delay_us(10);
+	while(!getNandRB());
+
+	/* first: read params page */
+    for(uint16_t i = 0; i<256; i++){
+	    onfiDataOut(&data[i], &waste);
+    }
+
+	/* then: verify using other copies */
+	for(uint16_t j = 0; j < 2; j++){
+		for(uint16_t i = 0; i<256; i++){
+			onfiDataOut(&tmp, &waste);
+			if(tmp != data[i]){
+				result |= 1;
+			}
+		}
+	}
+
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+
+	if(!memcmp(&params->signature, "ONFI", 4) == 0){
+		result |= 2;
+	}
+
+	return result;
+}
+
+static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
+	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read, uint8_t silent)
+{
+	uint32_t checksum = 0;
+
+	NAND_IO_PORT0.OUT = 0x00;
+	NAND_IO_PORT1.OUT = 0x00;
+	NAND_IO_PORT0.DIR = 0xFF;
+	NAND_IO_PORT1.DIR = 0xFF;
+
+	onfiCommand(ONFI_CMD_READ_CYCLE_1);
+
+	onfiAddressStart();
+
+	/* column addressing */
+	for(uint8_t i=0; i<col_cycles; ++i){
+		onfiAddress(0x00);
+	}
+
+	/* row addressing */
+	uint64_t row_address = page;
+	row_address |= (((uint64_t)block)<<page_bits);
+
+	for(uint8_t i=0; i<row_cycles; i++) {
+		onfiAddress((uint8_t)(row_address>>(i*8)));
+	}
+
+	onfiAddressEnd();
+	
+	onfiCommand(ONFI_CMD_READ_CYCLE_2);
+	_delay_32mhz_cycles(2);
+	while(!getNandRB());
+	
+	/* end of sending command, start reading the whole page */
+	onfiDataOutStart();
+
+	bytes_to_read = bytes_to_read / (supports_x16 + 1);
+	
+	for (int i = 0; i < bytes_to_read; ++i)
+	{
+		uint8_t temp_high = 0;
+		uint8_t temp_low = 0;
+		
+		onfiDataOut(&temp_low, &temp_high);
+
+		if(!silent){
+			if(supports_x16){
+				dumpByte(temp_high);
+			}
+			dumpByte(temp_low);
+		}
+		
+		checksum += (temp_high << 8) + temp_low;
+	}
+	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+	_delay_32mhz_cycles(nandDelayTime);
+
+	return checksum;
+}
+
+/**
+*@brief				Writes a pattern throughout the whole NAND
+*@param	params		Pointer to the ONFI parameter page
+*@param read_ecc	If set to 1, will read with ECC block, otherwise ECC block will be skipped
+*/
+static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uint8_t verify_read_iterations)
+{
+	uint8_t supports_x16 = params->feature_support & ONFI_FEATURE_16_BIT_BUS;
+	uint8_t row_cycles = params->address_cycles &0x0f;
+	uint8_t col_cycles = params->address_cycles >> 4;
+	uint8_t page_bits = 255; //Loop counts one bit too much
+	uint32_t block, page;
+	int i;
+	uint8_t abort = 0;
+	uint32_t reference_checksum, test_checksum;
+	uint32_t bytes_to_read = params->bytes_per_page + (read_ecc * params->spare_bytes_per_page);
+
+	for(uint32_t tmp_pages_per_block = params->pages_per_block;\
+			tmp_pages_per_block != 0; tmp_pages_per_block>>=1){
+		page_bits++;
+	}
+
+	dumpStart();
+
+	for(block = 0; block < params->block_per_logic_unit; block++){
+		if(isOperationCanceled() || abort){
+			break;
+		}
+
+		for(page = 0; page < params->pages_per_block && !abort; page++){
+			reference_checksum = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 0);
+
+			for(i=0; i<verify_read_iterations; i++){
+				test_checksum = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 1);
+				if(reference_checksum != test_checksum){
+					uartWriteString(NL OUTPUT_BOUNDARY_THICK);
+					uartprintf("Error during verification of block %ld page %ld (checksum mismatch '%08lx' != '%08lx')"NL, 
+						block, page, reference_checksum, test_checksum);
+					abort = 1;
+					break;
+				}
+			}
+		}
+	}
+
+	dumpEnd();
+	
+	uartWriteString(NL "reading done" NL);
+}

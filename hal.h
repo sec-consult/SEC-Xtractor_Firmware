@@ -16,9 +16,9 @@
 #include <stdint.h>
 
 #if defined(XTRACTOR_ARCH_TEST)
-#include "hal-test/definitions.h"
+#include "hal/test/definitions.h"
 #elif defined(XTRACTOR_ARCH_AVR)
-#include "hal-avr/definitions.h"
+#include "hal/avr/definitions.h"
 #else
 #error "XTRACTOR_ARCH not defined"
 #endif

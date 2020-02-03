@@ -13,9 +13,9 @@
 #include "secxtractor.h"
 
 #if defined(XTRACTOR_ARCH_TEST)
-#include "hal-test/hal-test.c"
+#include "hal/test/hal-test.c"
 #elif defined(XTRACTOR_ARCH_AVR)
-#include "hal-avr/hal-avr.c"
+#include "hal/avr/hal-avr.c"
 #else
 #error "XTRACTOR_ARCH not defined"
 #endif

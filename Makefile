@@ -7,7 +7,7 @@ CC_TEST=gcc
 CCFLAGS_TEST=-Os -std=gnu99 -DXTRACTOR_ARCH_TEST
 
 SRC_FILES=*.c *.h modules/*.c
-SRC_FILES_AVR=$(SRC_FILES) hal-avr/*.c hal-avr/*.h
+SRC_FILES_AVR=$(SRC_FILES) hal/avr/*.c hal/avr/*.h
 SRC_FILES_TEST=$(SRC_FILES) hal-test/*.c hal-test/*.h
 
 OBJECTS=*.o

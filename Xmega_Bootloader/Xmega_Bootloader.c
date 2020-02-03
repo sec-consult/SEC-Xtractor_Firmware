@@ -1,5 +1,5 @@
 #include "Xmega_Bootloader.h"
-#include "../hal-avr/definitions.h"
+#include "../hal/avr/definitions.h"
 
 #ifdef LARGE_MEMORY
   #define ADDR_T unsigned long

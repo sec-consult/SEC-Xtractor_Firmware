@@ -10,8 +10,8 @@
  * 
  * @authors Thomas Weber, Wolfgang Ettlinger, Steffen Robertz
  */
-#include "../secxtractor.h"
-#include "../hal.h"
+#include "../../secxtractor.h"
+#include "../../hal.h"
 #include <avr/io.h>
 /* 4 Megabit UART */
 #include <avr/pgmspace.h>
