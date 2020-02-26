@@ -19,10 +19,13 @@
 #include "hal/test/definitions.h"
 #elif defined(XTRACTOR_ARCH_AVR)
 #include "hal/avr/definitions.h"
+#elif defined(XTRACTOR_ARCH_ARM)
+#include "hal/arm/definitions.h"
 #else
 #error "XTRACTOR_ARCH not defined"
 #endif
 
+#ifndef PLATFORM_NUCLEO
 #pragma region generic device functionality
 static inline uint16_t readVoltage(void);
 static inline void activateInterrupts();
@@ -31,11 +34,12 @@ static inline void initADC(void);
 static inline void initSystemClock(void);
 static inline void resetDevice(void);
 #pragma endregion
+#endif
 
-#pragma region GPIO
-static inline void portOut(xtractor_port_t *port, uint8_t b);
-static inline void portSetDirection(xtractor_port_t *port, uint8_t mask);
-#pragma endregion
+// #pragma region GPIO
+// static inline void portOut(xtractor_port_t *port, uint8_t b);
+// static inline void portSetDirection(xtractor_port_t *port, uint8_t mask);
+// #pragma endregion
 
 #pragma region UART functionality
 static inline uint8_t uartHasInput(void);
@@ -50,20 +54,20 @@ static inline void uartMitMWriteString(char *s);
 static inline void uartWriteString(char *s);
 #pragma endregion
 
-#pragma region seven segment display
-static inline void sevensegWriteNumber(uint16_t printed_value);
-static inline void sevensegShowProgressBar(void);
-static inline void sevensegInit();
-#pragma endregion
+// #pragma region seven segment display
+// static inline void sevensegWriteNumber(uint16_t printed_value);
+// static inline void sevensegShowProgressBar(void);
+// static inline void sevensegInit();
+// #pragma endregion
 
-#pragma region SPI
-void spiConfigurePins();
-void spiGDreadID();
-uint8_t spiRead();
-#pragma endregion
+// #pragma region SPI
+// void spiConfigurePins();
+// void spiGDreadID();
+// uint8_t spiRead();
+// #pragma endregion
 
 #pragma region NAND
-typedef struct {
+typedef struct __packed {
     uint8_t signature[4];
     uint16_t rev_num;
     uint16_t feature_support;
@@ -111,6 +115,106 @@ typedef struct {
     char chipId[5];
 } onfi_infos_t;
 
+//////////////////////////////////////////////////////////////
+//                  ONFI Timings                            //
+//////////////////////////////////////////////////////////////
+#define T_ADL   200
+#define T_ALH   20
+#define T_ALS   50
+#define T_AR    25
+#define T_CLH   20
+#define T_CLR   20
+#define T_CLS   50
+#define T_CS    70
+#define T_DH    20
+#define T_DS    40
+#define T_IR    10
+#define T_RC    100
+#define T_REH   30
+#define T_RHW   200
+#define T_RP    50
+#define T_RR    40
+#define T_WC    100
+#define T_WH    30
+#define T_WHR   120
+#define T_WP    50
+#define T_WW    100
+
+typedef struct {
+    uint8_t adl;
+    uint8_t alh;
+    uint8_t als;
+    uint8_t ar;
+    uint8_t clh;
+    uint8_t clr;
+    uint8_t cls;
+    uint8_t cea;
+    uint8_t cs;
+    uint8_t dh;
+    uint8_t ds;
+    uint8_t ir;
+    uint8_t rc;
+    uint8_t reh;
+    uint8_t rhw;
+    uint8_t rp;
+    uint8_t rr;
+    uint8_t wc;
+    uint8_t wh;
+    uint8_t whr;
+    uint8_t wp;
+    uint8_t ww;
+} onfi_time_t;
+
+const onfi_time_t onfi_x16 ={
+    .adl=200,
+    .alh=20,
+    .als=50,
+    .ar=25,
+    .clh=20,
+    .clr=20,
+    .cls=50,
+    .cea=100,
+    .cs=70,
+    .dh=20,
+    .ds=40,
+    .ir=10,
+    .rc=100,
+    .reh=30,
+    .rhw=200,
+    .rp=50,
+    .rr=40,
+    .wc=100,
+    .wh=30,
+    .whr=120,
+    .wp=50,
+    .ww=100
+};
+
+const onfi_time_t onfi_x8 ={
+    .adl=200,
+    .alh=20,
+    .als=50,
+    .ar=25,
+    .clh=20,
+    .clr=20,
+    .cls=50,
+    .cs=70,
+    .dh=20,
+    .ds=40,
+    .ir=10,
+    .rc=100,
+    .reh=30,
+    .rhw=200,
+    .rp=50,
+    .rr=40,
+    .wc=100,
+    .wh=30,
+    .whr=120,
+    .wp=50,
+    .ww=100
+};
+
+
 static inline void nandReset();
 static inline void nandInit();
 static inline void nandReadONFI(uint8_t result[]);
@@ -122,45 +226,45 @@ static inline void initOnfiParam();
 static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progress);
 #pragma endregion
 
-#pragma region NOR
-static void norResetFlash();
-static inline void norModeWord();
-static inline void norModeByte();
-static inline void norStartReadData();
-static inline void norEndReadData();
-static inline uint8_t norRead8DataBits(uint32_t address);
-static inline uint16_t norRead16DataBits(uint32_t address);
-//static inline void norWrite8DataBits(uint32_t address, uint8_t data);
-//static inline void norEraseChip();
-#pragma endregion
+// #pragma region NOR
+// static void norResetFlash();
+// static inline void norModeWord();
+// static inline void norModeByte();
+// static inline void norStartReadData();
+// static inline void norEndReadData();
+// static inline uint8_t norRead8DataBits(uint32_t address);
+// static inline uint16_t norRead16DataBits(uint32_t address);
+// //static inline void norWrite8DataBits(uint32_t address, uint8_t data);
+// //static inline void norEraseChip();
+// #pragma endregion
 
-#pragma region UART_SCANNER
-typedef struct {
-    uint32_t pin_changes;
-    uint64_t last_change;
-    uint64_t time_high;
-    uint64_t time_low;
-    uint32_t shortest_lowtime;
-}scanner_result_t;
-static inline void initScan(uint8_t pin_num);
-static volatile inline scanner_result_t* getChanges(void);
-static volatile inline uint32_t getShortestLowTime(void);
-#pragma endregion
+// #pragma region UART_SCANNER
+// typedef struct {
+//     uint32_t pin_changes;
+//     uint64_t last_change;
+//     uint64_t time_high;
+//     uint64_t time_low;
+//     uint32_t shortest_lowtime;
+// }scanner_result_t;
+// static inline void initScan(uint8_t pin_num);
+// static volatile inline scanner_result_t* getChanges(void);
+// static volatile inline uint32_t getShortestLowTime(void);
+// #pragma endregion
 
-#pragma region TIMER
-static inline void initTimer(void);
-static inline uint64_t getTime(void);
-#pragma endregion
+// #pragma region TIMER
+// static inline void initTimer(void);
+// static inline uint64_t getTime(void);
+// #pragma endregion
 
-#pragma region JTAG
-static inline uint8_t jtagReadPin(uint8_t pin);
-static inline void jtagWritePin(uint8_t pin, uint8_t level);
-void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen);
-void jtagTapState(char jtagTapState[], int tck, int tms);
-static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst);
-static void jtagPulseTms(int tck, int tms, int s_tms);
-static void jtagPulseTdi(int tck, int tdi, int s_tdi);
-uint8_t jtagPulseTdo(int tck, int tdo);
-#pragma endregion
+// #pragma region JTAG
+// static inline uint8_t jtagReadPin(uint8_t pin);
+// static inline void jtagWritePin(uint8_t pin, uint8_t level);
+// void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen);
+// void jtagTapState(char jtagTapState[], int tck, int tms);
+// static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst);
+// static void jtagPulseTms(int tck, int tms, int s_tms);
+// static void jtagPulseTdi(int tck, int tdi, int s_tdi);
+// uint8_t jtagPulseTdo(int tck, int tdo);
+// #pragma endregion
 
 #endif

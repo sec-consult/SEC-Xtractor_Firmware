@@ -23,52 +23,104 @@ typedef enum {
 	OUT = 1
 } direction_t;
 
-static inline void setPinValue(PORT_t *port,  uint8_t pin_mask, state_t val)
+typedef enum {
+	GPIO_PU = 0,
+	GPIO_PD = 1,
+	GPIO_HIGH_Z =2
+} in_mode_t;
+
+static inline void setPinValue(port_pin_t pin_info, state_t val)
 {
 	if(val){
-		port->OUTSET = pin_mask;
+		pin_info.port->OUTSET = (1<<pin_info.pin);
 	}else{
-		port->OUTCLR = pin_mask;
+		pin_info.port->OUTCLR = (1<<pin_info.pin);
 	}
 }
 
-static inline void setPinDir(PORT_t *port,  uint8_t pin_mask, direction_t dir)
+static inline void setInputMode(port_pin_t pin_info, in_mode_t mode)
+{
+	switch(mode){
+		case GPIO_PU:
+			pin_info.port->OUTSET = (1<<pin_info.pin);
+			break;
+		case GPIO_PD:
+			break;
+		case GPIO_HIGH_Z:
+			pin_info.port->OUTCLR = (1<<pin_info.pin);
+			break;
+	}
+}
+
+static inline void setPinDir(port_pin_t pin_info, direction_t dir)
 {
 	if(dir){
-		port->DIRSET = pin_mask;
+		pin_info.port->DIRSET = (1<<pin_info.pin);
 	}else{
-		port->DIRCLR = pin_mask;
+		pin_info.port->DIRCLR = (1<<pin_info.pin);
 	}
 }
 
 static inline void  setNandIODir(direction_t dir)
 {
 	if(dir){
-		NAND_IO_PORT0.DIR = 0xff;
-		NAND_IO_PORT1.DIR = 0xff;
+		NAND_IO_PORT0[0].port->DIR = 0xff;
+		NAND_IO_PORT1[0].port->DIR = 0xff;
 	}else{
-		NAND_IO_PORT0.DIR = 0x00;
-		NAND_IO_PORT1.DIR = 0x00;
+		NAND_IO_PORT0[0].port->DIR = 0x00;
+		NAND_IO_PORT1[0].port->DIR = 0x00;
 	}
 }
 static inline void setNandIOValue(uint16_t val)
 {
-	NAND_IO_PORT0.OUT = val;
-	NAND_IO_PORT1.OUT = (val >> 8);
+	NAND_IO_PORT0[0].port->OUT = val;
+	NAND_IO_PORT1[0].port->OUT = (val >> 8);
 }
 static inline void getNandIOValue(uint8_t *val_port0, uint8_t *val_port1)
 {
-	*val_port0 = NAND_IO_PORT0.IN;
-	*val_port1 = NAND_IO_PORT1.IN;
+	*val_port0 = NAND_IO_PORT0[0].port->IN;
+	*val_port1 = NAND_IO_PORT1[0].port->IN;
 }
-static inline void _delay_32mhz_cycles(uint8_t cycles_at_32mhz)
+// static inline void _delay_32mhz_cycles(uint16_t cycles_at_32mhz)
+// {
+// 	uint8_t cycles = cycles_at_32mhz *F_CPU/32000000;
+// 	for(uint8_t i = 0; i<cycles; ++i){
+// 		NOP;
+// 	}
+// }
+
+static inline void delay_ns(const uint16_t delay)
 {
-	uint8_t cycles = cycles_at_32mhz *F_CPU/32000000;
-	for(uint8_t i = 0; i<cycles; ++i){
+	//loop too slow, NOP=31ns
+	for(uint16_t i=31; i<delay; i +=31){
 		NOP;
 	}
+
+
+	// const uint32_t cycles = (delay*F_CPU)/1000000000;
+	// for(uint32_t i = cycles; i>0; i--){
+	// 	NOP;
+	// }
 }
+
 static inline uint8_t getNandRB()
 {
-	return (((NAND_CTRL_PORT.IN & NAND_RB) == NAND_RB) ? 1 : 0);
+	return ((NAND_CTRL_PORT.r_b.port->IN & (1<<NAND_CTRL_PORT.r_b.pin)) ? 1 : 0);
+}
+
+static inline void initPins()
+{
+	port_pin_t* ctrl_port = (port_pin_t*) &NAND_CTRL_PORT.ale;
+	for(uint8_t i=0; i<7; ++i){
+		setInputMode(ctrl_port[i], GPIO_HIGH_Z);
+		setPinDir(ctrl_port[i], IN);
+	}
+	for(uint8_t i=0; i<8; ++i){
+		setInputMode(NAND_IO_PORT0[i], GPIO_HIGH_Z);
+		setPinDir(NAND_IO_PORT0[i], IN);
+	}
+	for(uint8_t i=0; i<8; ++i){
+		setInputMode(NAND_IO_PORT1[i], GPIO_HIGH_Z);
+		setPinDir(NAND_IO_PORT1[i], IN);
+	}
 }

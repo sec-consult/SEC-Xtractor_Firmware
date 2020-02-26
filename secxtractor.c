@@ -13,7 +13,7 @@
 #include "hal.h"
 #include "shell.h"
 
-uint64_t dumpPosition;
+ uint64_t dumpPosition;
 
 static inline void dumpStart()
 {
@@ -43,8 +43,9 @@ static inline void dumpByte(uint8_t b)
 			}
 		}
 	}
-	uartWriteChar(hexChars[b >> 4]);
-	uartWriteChar(hexChars[b & 0xF]);
+	uartWriteChar(b);
+	//uartWriteChar(hexChars[b >> 4]);
+	//uartWriteChar(hexChars[b & 0xF]);
 	dumpPosition++;
 }
 
@@ -73,16 +74,45 @@ static inline int isOperationCanceled()
  */
 int main(void)
 {
+	#ifdef XTRACTOR_ARCH_ARM
+		initSystemClock();
+		// GPIOB->OSPEEDR |= 0x3<<14;
+        // GPIOB->MODER |= 1 << GPIO_MODER_MODE7_Pos;
+		// while(1){
+		// 	GPIOB->BSRR = 1<<7;
+		// 	// __NOP();
+		// 	// __NOP();
+		// 	// __NOP();
+		// 	// __NOP();
+		// 	// __NOP();
+		// 	delay_ns(100);
+		// 	GPIOB->BSRR = 1<<(7+16);
+		// 	//GPIOB->ODR ^= 1<< GPIO_ODR_OD7_Pos;
+		// 	//delay_ns(500);
+		// }
+		uartInit();
+		shellInit();
+		initOnfiParam();
+		initPins();
+		while (1)
+		{
+			if (uartHasInput())
+			{
+				shell(uartGetInput());
+			}
+		}
+	#else
 	DELAY_MS(100); //wait for possible voltage glitches
 	//disable JTAG to make PORTB 4-7 usable
-	disableJTAG();
 	initSystemClock();
+	disableJTAG();
 	uartInit();
 	activateInterrupts();
 	shellInit();
-	sevensegInit();
-	initADC();
+	//sevensegInit();
+	//initADC();
 	initOnfiParam();
+	initPins();
 	while (1)
 	{
 		if (uartHasInput())
@@ -91,4 +121,5 @@ int main(void)
 		}
 		sevensegWriteNumber(readVoltage());
 	}
+	#endif
 }

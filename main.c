@@ -16,6 +16,8 @@
 #include "hal/test/hal-test.c"
 #elif defined(XTRACTOR_ARCH_AVR)
 #include "hal/avr/hal-avr.c"
+#elif defined(XTRACTOR_ARCH_ARM)
+#include "hal/arm/hal-arm.c"
 #else
 #error "XTRACTOR_ARCH not defined"
 #endif

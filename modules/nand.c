@@ -64,10 +64,10 @@ static void cmdWriteNand()
 		while(!uartHasInput());
 		if(uartGetInput() != 'n'){
 			uartWriteString("Writing through ECC!"NL);
-			onfiWriteData(&onfi_infos.params, 0xbeef, 1);
+			onfiWriteData(&onfi_infos.params, 0xaaaa, 1);
 		}else{
 			uartWriteString("Skipping ECC!"NL);
-			onfiWriteData(&onfi_infos.params, 0xbeef, 0);
+			onfiWriteData(&onfi_infos.params, 0xaaaa, 0);
 		}
 		uartWriteString(NL "Operations finished successfully." NL);
 	}
@@ -79,15 +79,17 @@ static void cmdWriteNand()
 static void cmdDumpNand(char *arguments)
 {
 	if(isOnfiParamConfigured()){
-		nandInit();
-		nandReset();
 		uartWriteString(NL "Dump with ECC Bytes? [Y/n]: " NL);
 		while(!uartHasInput());
 		uint8_t dump_ecc = uartGetInput() != 'n';
 		
+		#ifdef XTRACTOR_ARCH_ARM
 		uartWriteString(NL "Verify read operations? [Y/n]: " NL);
 		while(!uartHasInput());
 		uint8_t verify_read = uartGetInput() != 'n';
+		#else
+		uint8_t verify_read = 0;
+		#endif
 		
 		if(dump_ecc){
 			uartWriteString("Dumping with ECC ");
@@ -100,7 +102,8 @@ static void cmdDumpNand(char *arguments)
 		}else{
 			uartWriteString("without verification!"NL);
 		}
-
+		nandInit();
+		nandReset();
 		onfiReadData(&onfi_infos.params, dump_ecc, verify_read);
 	}
 }
@@ -138,6 +141,12 @@ static inline void onfiPrintParams(onfi_infos_t *infos)
 	}
 
 	uartprintf("Optional commands supported:\t0x%04x"NL, params->opt_cmd_support);
+	uartprintf("Timing mode supported:\t\t0x%04x"NL, params->timing_mode_support);
+	for(uint8_t i=0; i<=5; i++){
+		if(params->timing_mode_support & (1<<i)){
+			uartprintf("\t\t\t\t* Timing Mode %u"NL,i);
+		}
+	}
 	uartprintf("Bytes per Page:\t\t\t%"PRIu32 NL, params->bytes_per_page);
 	uartprintf("Spare bytes per Page:\t\t%u"NL, params->spare_bytes_per_page);
 	uartprintf("Pages per Block:\t\t%"PRIu32 NL, params->pages_per_block);
@@ -191,6 +200,106 @@ static void cmdConfigOnfi()
 	cmdInfoNand("");
 }
 
+/**
+ *	@brief	configure the onfi params
+ */
+static void cmdConfigOnfiManual()
+{
+	uint8_t buffer[8];
+	uint8_t i = 0;
+	uartWriteString("Manually configuring device with ONFI parameters"NL);
+	
+	uartWriteString("How many LUNs exist?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.logical_units = atoi(buffer);
+	i=0;
+
+	uartWriteString("How many Blocks per LUN?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.block_per_logic_unit = atoi(buffer);
+	i=0;
+
+	uartWriteString("How many Pages per Block?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.pages_per_block = atoi(buffer);
+	i=0;
+
+	uartWriteString("How many Bytes per Page without ECC?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.bytes_per_page = atoi(buffer);
+	i=0;
+
+	uartWriteString("How many Bytes per Spare Page?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.spare_bytes_per_page = atoi(buffer);
+	i=0;
+
+	uartWriteString("Number of Row Cycles?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.address_cycles = atoi(buffer)&0x0f;
+	i=0;
+
+	uartWriteString("Number of Column Cycles?"NL);
+	do {
+		while(!uartHasInput());
+		buffer[i] = uartGetInput();
+		uartWriteChar(buffer[i]);
+		i++;
+	}while(buffer[i-1] != '\n' && i<sizeof(buffer));
+	buffer[i-1] = 0;
+	onfi_infos.params.address_cycles |= (atoi(buffer)<<4);
+	i=0;
+
+	uartGetInput();
+	uartWriteString("Supports x16 [Y/n]: "NL);
+	while(!uartHasInput());
+	if(uartGetInput() != 'n'){
+		onfi_infos.params.feature_support = 0x0001;
+	}
+
+	//Let ONFI checks pass by writing ONFI in Config
+	memcpy(onfi_infos.params.signature, "ONFI", 4);
+
+	uartWriteString("ONFI Manual Configuration done!"NL);
+	onfiPrintParams(&onfi_infos);
+}
+
 void cmdDelayNand(char *arguments)
 {
 
@@ -208,15 +317,19 @@ static inline void onfiCommand(uint8_t command)
 {
 	setNandIOValue(0x0000);
 	setNandIODir(OUT);
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	// setPinValue(NAND_CTRL_PORT.ce, LOW);
+	// setPinValue(NAND_CTRL_PORT.cle, LOW);
+	// setPinValue(NAND_CTRL_PORT.ale, LOW);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	setPinValue(NAND_CTRL_PORT.ce, LOW);
+	setPinValue(NAND_CTRL_PORT.cle, HIGH);
+	setPinValue(NAND_CTRL_PORT.we, LOW);
 	setNandIOValue(command);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
+	delay_ns(T_WP);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	delay_ns(T_CLH);
+	setPinValue(NAND_CTRL_PORT.cle, LOW);
+	while(!getNandRB());
 }
 
 /**
@@ -224,10 +337,11 @@ static inline void onfiCommand(uint8_t command)
 */
 static inline void onfiAddressStart(void)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_ALE, HIGH);
+	setPinValue(NAND_CTRL_PORT.cle, LOW);
+	setPinValue(NAND_CTRL_PORT.ce, LOW);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	delay_ns(T_CS-T_ALS);
+	setPinValue(NAND_CTRL_PORT.ale, HIGH);
 	setNandIOValue(0x00FF);
 }
 
@@ -236,9 +350,11 @@ static inline void onfiAddressStart(void)
 */
 static inline void onfiAddress(uint8_t address)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	setPinValue(NAND_CTRL_PORT.we, LOW);
 	setNandIOValue(address);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
+	delay_ns(T_WP);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	delay_ns(T_WH);
 }
 
 /**
@@ -246,7 +362,8 @@ static inline void onfiAddress(uint8_t address)
 */
 static inline void onfiAddressEnd(void)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+	setPinValue(NAND_CTRL_PORT.ce, HIGH);
+	setPinValue(NAND_CTRL_PORT.ale, LOW);
 }
 
 /**
@@ -256,6 +373,7 @@ static inline void onfiDataOutStart()
 {
 	setNandIOValue(0x0000);
 	setNandIODir(IN);
+	setPinValue(NAND_CTRL_PORT.ce, LOW);
 }
 
 /**
@@ -263,10 +381,20 @@ static inline void onfiDataOutStart()
 */
 static inline void onfiDataOut(uint8_t *out_low, uint8_t *out_high)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_RE, LOW);
-	_delay_32mhz_cycles(10 +nandDelayTime);
+	setPinValue(NAND_CTRL_PORT.re, LOW);
+	delay_ns(T_RP);
+	//_delay_32mhz_cycles( 2 + nandDelayTime);
 	getNandIOValue(out_low, out_high);
-	setPinValue(&NAND_CTRL_PORT, NAND_RE, HIGH);
+	setPinValue(NAND_CTRL_PORT.re, HIGH);
+	delay_ns(T_REH);
+}
+
+/**
+*@brief	receives a byte/word from the NAND
+*/
+static inline void onfiDataOutEnd()
+{
+	setPinValue(NAND_CTRL_PORT.ce, HIGH);
 }
 
 /**
@@ -274,9 +402,9 @@ static inline void onfiDataOut(uint8_t *out_low, uint8_t *out_high)
 */
 static inline void onfiDataInStart(void)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
+	setPinValue(NAND_CTRL_PORT.cle, LOW);
+	setPinValue(NAND_CTRL_PORT.ce, LOW);
+	setPinValue(NAND_CTRL_PORT.ale, LOW);
 }
 
 /**
@@ -284,10 +412,11 @@ static inline void onfiDataInStart(void)
 */
 static inline void onfiDataIn(uint8_t data_low, uint8_t data_high)
 {
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, LOW);
+	setPinValue(NAND_CTRL_PORT.we, LOW);
 	setNandIOValue((((uint16_t)data_high)<<8)|data_low);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
-	_delay_32mhz_cycles(1);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	//TODO: Get right value
+	delay_ns(50);
 }
 
 /**
@@ -296,7 +425,8 @@ static inline void onfiDataIn(uint8_t data_low, uint8_t data_high)
 static inline void nandReset()
 {
 	onfiCommand(ONFI_CMD_RESET);
-	_delay_us(5);
+	delay_ns(500);
+	//_delay_32mhz_cycles(160);
 	while(!getNandRB());
 }
 
@@ -309,15 +439,20 @@ static inline void nandInit()
 	setNandIOValue(0x0000);
 	setNandIODir(OUT);
 
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_WE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_RE, HIGH);
-	setPinValue(&NAND_CTRL_PORT, NAND_CLE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_ALE, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
-	setPinValue(&NAND_CTRL_PORT, NAND_RB, HIGH);
-	setPinDir(&NAND_CTRL_PORT,(NAND_ALE) | (NAND_CLE) | (NAND_CE) | (NAND_RE) | (NAND_WP) | (NAND_WE), OUT);
-	setPinDir(&NAND_CTRL_PORT, NAND_RB, IN);
+	setPinValue(NAND_CTRL_PORT.ce, HIGH);
+	setPinValue(NAND_CTRL_PORT.we, HIGH);
+	setPinValue(NAND_CTRL_PORT.re, HIGH);
+	setPinValue(NAND_CTRL_PORT.cle, LOW);
+	setPinValue(NAND_CTRL_PORT.ale, LOW);
+	setPinValue(NAND_CTRL_PORT.wp, LOW);
+	setPinDir(NAND_CTRL_PORT.ale, OUT);
+	setPinDir(NAND_CTRL_PORT.cle, OUT);
+	setPinDir(NAND_CTRL_PORT.ce, OUT);
+	setPinDir(NAND_CTRL_PORT.re, OUT);
+	setPinDir(NAND_CTRL_PORT.wp, OUT);
+	setPinDir(NAND_CTRL_PORT.we, OUT);
+	setInputMode(NAND_CTRL_PORT.r_b, GPIO_PU);
+	setPinDir(NAND_CTRL_PORT.r_b, IN);
 }
 
 /**
@@ -336,7 +471,7 @@ static inline void nandReadONFI(uint8_t result[])
 	onfiDataOut(&result[1], &waste);
 	onfiDataOut(&result[2], &waste);
 	onfiDataOut(&result[3], &waste);
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+	setPinValue(NAND_CTRL_PORT.ce, HIGH);
 }
 
 /**
@@ -356,7 +491,7 @@ static inline void nandReadChipID(uint8_t *result)
 	onfiDataOut(&result[2], &waste);
 	onfiDataOut(&result[3], &waste);
 	onfiDataOut(&result[4], &waste);
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+	setPinValue(NAND_CTRL_PORT.ce, HIGH);
 
 }
 
@@ -367,10 +502,8 @@ static inline void nandReadChipID(uint8_t *result)
 */
 static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progress)
 {
-	NAND_IO_PORT0.OUT = 0x00;
-	NAND_IO_PORT1.OUT = 0x00;
-	NAND_IO_PORT0.DIR = 0xFF;
-	NAND_IO_PORT1.DIR = 0xFF;
+	setNandIOValue(0x0000);
+	setNandIODir(OUT);
 	uint8_t page_bits = 255; //Loop counts one bit too much
 	for(uint32_t tmp_pages_per_block = params->pages_per_block;\
 	tmp_pages_per_block != 0; tmp_pages_per_block>>=1){
@@ -379,7 +512,7 @@ static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progre
 	uint8_t row_cycles = params->address_cycles &0x0f;
 	uint8_t col_cycles = params->address_cycles >> 4;
 	uint32_t block=0;
-	setPinValue(&NAND_CTRL_PORT, NAND_WP, HIGH);
+	setPinValue(NAND_CTRL_PORT.wp, HIGH);
 	while(block<params->block_per_logic_unit){
 		onfiCommand(ONFI_CMD_BLOCK_ERASE_CYCLE_1);
 		onfiAddressStart();
@@ -389,14 +522,16 @@ static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progre
 		}
 		onfiAddressEnd();
 		onfiCommand(ONFI_CMD_BLOCK_ERASE_CYCLE_2);
-		NOP3;
-		while(!getNandRB());
+		//TODO:get right value
+		//delay_ns(40);
+		//_delay_32mhz_cycles(3);
+		//while(!getNandRB());
 		if(enable_progress & block%20==0){
 			uartWriteChar('.');
 		}
 		++block;
 	}
-	setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
+	setPinValue(NAND_CTRL_PORT.wp, LOW);
 }
 
 /**
@@ -424,7 +559,7 @@ static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, ui
 	onfiEraseAll(params, 0);
 
 	while (block < params->block_per_logic_unit){ 
-		setPinValue(&NAND_CTRL_PORT, NAND_WP, HIGH);
+		setPinValue(NAND_CTRL_PORT.wp, HIGH);
 		onfiCommand(ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_1);
 		onfiAddressStart();
 		for(uint8_t i=0; i<col_cycles; ++i){
@@ -436,7 +571,9 @@ static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, ui
 			onfiAddress((uint8_t)(row_address>>(i*8)));
 		}
 		onfiAddressEnd();
-		NOP2;
+		//TODO: get right value
+		delay_ns(50);
+		//_delay_32mhz_cycles(2);
 		onfiDataInStart();
 		for (int i = 0; i < pagesize; i++)
 		{
@@ -451,13 +588,15 @@ static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, ui
 			}
 		}
 		onfiCommand(ONFI_CMD_PAGE_CACHE_PROGRAM_CYCLE_2);
-		_delay_us(10);
+		//TODO: get right value
+		delay_ns(100);
+		//_delay_32mhz_cycles(10);
 		while(!getNandRB());
 		onfiCommand(ONFI_CMD_READ_STATUS);
 		uint8_t temp1, temp2;
 		onfiDataOut(&temp1, &temp2);
-		setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
-		setPinValue(&NAND_CTRL_PORT, NAND_WP, LOW);
+		setPinValue(NAND_CTRL_PORT.ce, HIGH);
+		setPinValue(NAND_CTRL_PORT.wp, LOW);
 		page++;
 		if (page == 64)
 		{
@@ -488,7 +627,7 @@ static inline int onfiReadAndCheckParameters(onfi_param_page_t *params)
 	onfiAddressEnd();
 	onfiDataOutStart();
 	
-	_delay_us(10);
+	//_delay_32mhz_cycles(2);
 	while(!getNandRB());
 
 	/* first: read params page */
@@ -505,8 +644,7 @@ static inline int onfiReadAndCheckParameters(onfi_param_page_t *params)
 			}
 		}
 	}
-
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
+	onfiDataOutEnd();
 
 	if(!memcmp(&params->signature, "ONFI", 4) == 0){
 		result |= 2;
@@ -514,21 +652,13 @@ static inline int onfiReadAndCheckParameters(onfi_param_page_t *params)
 
 	return result;
 }
-
 static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
-	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read, uint8_t silent)
+	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read, uint8_t silent, uint8_t* buffer)
 {
-	uint32_t checksum = 0;
-
-	NAND_IO_PORT0.OUT = 0x00;
-	NAND_IO_PORT1.OUT = 0x00;
-	NAND_IO_PORT0.DIR = 0xFF;
-	NAND_IO_PORT1.DIR = 0xFF;
-
+	setNandIOValue(0x0000);
+	setNandIODir(OUT);
 	onfiCommand(ONFI_CMD_READ_CYCLE_1);
-
 	onfiAddressStart();
-
 	/* column addressing */
 	for(uint8_t i=0; i<col_cycles; ++i){
 		onfiAddress(0x00);
@@ -543,37 +673,121 @@ static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t suppo
 	}
 
 	onfiAddressEnd();
-	
 	onfiCommand(ONFI_CMD_READ_CYCLE_2);
-	_delay_32mhz_cycles(2);
-	while(!getNandRB());
-	
-	/* end of sending command, start reading the whole page */
 	onfiDataOutStart();
+	while(!getNandRB());
 
 	bytes_to_read = bytes_to_read / (supports_x16 + 1);
 	
-	for (int i = 0; i < bytes_to_read; ++i)
+	for (uint16_t i = 0; i < bytes_to_read; ++i)
 	{
 		uint8_t temp_high = 0;
 		uint8_t temp_low = 0;
 		
 		onfiDataOut(&temp_low, &temp_high);
-
+		if(buffer != NULL){
+			if(supports_x16){
+				buffer[i*2+1] = temp_high;
+				buffer[i*2] = temp_low;
+			}else{
+				buffer[i] = temp_low;
+			}
+		}
 		if(!silent){
 			if(supports_x16){
 				dumpByte(temp_high);
 			}
 			dumpByte(temp_low);
 		}
-		
-		checksum += (temp_high << 8) + temp_low;
 	}
-	setPinValue(&NAND_CTRL_PORT, NAND_CE, HIGH);
-	_delay_32mhz_cycles(nandDelayTime);
-
-	return checksum;
+	onfiDataOutEnd();
 }
+
+static inline uint8_t ecc_repetition_decode(uint8_t rep1, uint8_t rep2, uint8_t rep3)
+{
+	uint8_t result=0;
+	for(uint8_t i = 0; i<8; i++){
+		//count 1 and decide if majority:
+		uint8_t cnt = (rep1&(1<<i))+(rep2&(1<<i))+(rep3&(1<<i));
+		if(cnt>=2){
+			result |= (1<<i);
+		}
+	}
+	return result;
+}
+
+static inline uint32_t onfiVerifiedDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
+	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read)
+{
+	uint8_t page_1[bytes_to_read];
+	uint8_t page_2[bytes_to_read];
+	uint8_t page_3[bytes_to_read];	
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_1);	
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_2);
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_3);
+
+	for(uint32_t i= 0; i<bytes_to_read; i++){
+		dumpByte(ecc_repetition_decode(page_1[i],page_2[i],page_3[i]));
+	}
+}
+
+
+// static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
+// 	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read, uint8_t silent, uint8_t* buffer)
+// {
+// 	uint32_t checksum = 0;
+
+// 	setNandIOValue(0x0000);
+// 	setNandIODir(OUT);
+
+// 	onfiCommand(ONFI_CMD_READ_CYCLE_1);
+
+// 	onfiAddressStart();
+
+// 	/* column addressing */
+// 	for(uint8_t i=0; i<col_cycles; ++i){
+// 		onfiAddress(0x00);
+// 	}
+
+// 	/* row addressing */
+// 	uint64_t row_address = page;
+// 	row_address |= (((uint64_t)block)<<page_bits);
+
+// 	for(uint8_t i=0; i<row_cycles; i++) {
+// 		onfiAddress((uint8_t)(row_address>>(i*8)));
+// 	}
+
+// 	onfiAddressEnd();
+// 	onfiCommand(ONFI_CMD_READ_CYCLE_2);
+
+// 	/* end of sending command, start reading the whole page */
+// 	onfiDataOutStart();
+// 	while(!getNandRB());
+
+// 	bytes_to_read = bytes_to_read / (supports_x16 + 1);
+	
+// 	for (uint16_t i = 0; i < bytes_to_read; ++i)
+// 	{
+// 		uint8_t temp_high = 0;
+// 		uint8_t temp_low = 0;
+		
+// 		onfiDataOut(&temp_low, &temp_high);
+
+// 		if(!silent){
+// 			if(supports_x16){
+// 				dumpByte(temp_high);
+// 			}
+// 			dumpByte(temp_low);
+// 		}
+		
+// 		checksum += (((uint16_t)temp_high) << 8) + temp_low;
+// 	}
+// 	onfiDataOutEnd();
+// 	delay_ns(100);
+// 	//_delay_32mhz_cycles(nandDelayTime);
+
+// 	return checksum;
+// }
 
 /**
 *@brief				Writes a pattern throughout the whole NAND
@@ -589,7 +803,7 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uin
 	uint32_t block, page;
 	int i;
 	uint8_t abort = 0;
-	uint32_t reference_checksum, test_checksum;
+	uint32_t reference_checksum, test_checksum, test_checksum2;
 	uint32_t bytes_to_read = params->bytes_per_page + (read_ecc * params->spare_bytes_per_page);
 
 	for(uint32_t tmp_pages_per_block = params->pages_per_block;\
@@ -605,18 +819,25 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uin
 		}
 
 		for(page = 0; page < params->pages_per_block && !abort; page++){
-			reference_checksum = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 0);
+			//reference_checksum = 
 
-			for(i=0; i<verify_read_iterations; i++){
-				test_checksum = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 1);
-				if(reference_checksum != test_checksum){
-					uartWriteString(NL OUTPUT_BOUNDARY_THICK);
-					uartprintf("Error during verification of block %ld page %ld (checksum mismatch '%08lx' != '%08lx')"NL, 
-						block, page, reference_checksum, test_checksum);
-					abort = 1;
-					break;
-				}
+			if(verify_read_iterations){
+				onfiVerifiedDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read);
+			}else{
+				onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 0, NULL);
 			}
+
+			// for(i=0; i<verify_read_iterations; i++){
+			// 	test_checksum = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 1);
+			// 	test_checksum2 = onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 1);
+			// 	if(reference_checksum != test_checksum && reference_checksum != test_checksum2 && test_checksum2!=test_checksum){
+			// 		uartWriteString(NL OUTPUT_BOUNDARY_THICK);
+			// 		uartprintf("Error during verification of block %ld page %ld (checksum mismatch '%08lx' != '%08lx')"NL, 
+			// 			block, page, reference_checksum, test_checksum);
+			// 		abort = 1;
+			// 		break;
+			// 	}
+			// }
 		}
 	}
 

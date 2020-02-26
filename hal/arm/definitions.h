@@ -13,39 +13,25 @@
 #ifndef _DEFINITIONS_H
 #define _DEFINITIONS_H 
 
-#include <avr/io.h>
-
-typedef PORT_t xtractor_port_t;
+#include "stm32f446x.h"
 
 /*! @brief No operation inline assembly definition */
-#define NOP do { __asm__ __volatile__ ("nop"); } while (0)
+//#define NOP do { __asm__ __volatile__ ("nop"); } while (0)
 
-#define DELAY_MS(ms) _delay_ms(ms)
-#define DELAY_US(us) _delay_us(us)
+//#define DELAY_MS(ms) _delay_ms(ms)
+//#define DELAY_US(us) _delay_us(us)
 
 /* port for voltage ADC and 7seg display */
 #define DEVICE_FUNCTION_PORT PORTA
 
 /*! @brief NAND interface pin definitions. */
-// #define NAND_IO_PORT0 	PORTH
-// #define NAND_IO_PORT1 	PORTJ
-// #define NAND_CTRL_PORT 	PORTK
 
-/*! \brief NOR interface pin definitions. */
-#define NOR_ADDR_PORT0	PORTB
-#define NOR_ADDR_PORT1	PORTC
-#define NOR_ADDR_PORT2	PORTD
-#define NOR_ADDR_PORT3	PORTF
-#define NOR_DATA_PORT0	PORTH
-#define NOR_DATA_PORT1	PORTJ
-#define NOR_CTRL_PORT PORTK
-
-typedef struct {
-    PORT_t *port;
+typedef struct __packed{
+    GPIO_TypeDef *port;
     uint8_t pin;
 } port_pin_t;
 
-typedef struct {
+typedef struct __packed{
     port_pin_t ale;
     port_pin_t ce;
     port_pin_t cle;
@@ -55,35 +41,44 @@ typedef struct {
     port_pin_t re;
 } Nand_Ctrl_Port_t;
 
-port_pin_t NAND_IO_PORT0[8] = { \
-{&PORTH,0},\
-{&PORTH,1},\
-{&PORTH,2},\
-{&PORTH,3},\
-{&PORTH,4},\
-{&PORTH,5},\
-{&PORTH,6},\
-{&PORTH,7}}; 
+port_pin_t NAND_IO_PORT0[8] = {\
+{GPIOD,13},\
+{GPIOB,2},\
+{GPIOB,6},\
+{GPIOF,4},\
+{GPIOC,2},\
+{GPIOB,1},\
+{GPIOB,4},\
+{GPIOA,4}}; 
 
-port_pin_t NAND_IO_PORT1[8] = { \
-{&PORTJ,0},\
-{&PORTJ,1},\
-{&PORTJ,2},\
-{&PORTJ,3},\
-{&PORTJ,4},\
-{&PORTJ,5},\
-{&PORTJ,6},\
-{&PORTJ,7}}; 
+port_pin_t NAND_IO_PORT1[8] = {
+{GPIOB,3},\
+{GPIOB,5},\
+{GPIOC,7},\
+{GPIOA,15},\
+{GPIOB,12},\
+{GPIOB,13},\
+{GPIOB,15},\
+{GPIOC,6}}; 
 
 Nand_Ctrl_Port_t NAND_CTRL_PORT = {
-    .r_b = {&PORTK,6},
-    .re = {&PORTK,1},
-    .ce = {&PORTK,0},
-    .cle = {&PORTK,5},
-    .ale = {&PORTK,4},
-    .we = {&PORTK,2},
-    .wp = {&PORTK, 3},
+    .r_b = {GPIOD,7},
+    .re = {GPIOD,6},
+    .ce = {GPIOD,5},
+    .cle = {GPIOD,4},
+    .ale = {GPIOD,3},
+    .we = {GPIOE, 4},
+    .wp = {GPIOE, 2},
 };
+
+/*! \brief NOR interface pin definitions. */
+#define NOR_ADDR_PORT0	PORTB
+#define NOR_ADDR_PORT1	PORTC
+#define NOR_ADDR_PORT2	PORTD
+#define NOR_ADDR_PORT3	PORTF
+#define NOR_DATA_PORT0	PORTH
+#define NOR_DATA_PORT1	PORTJ
+#define NOR_CTRL_PORT PORTK
 
 #define DEBUG(x, ...) {}
 

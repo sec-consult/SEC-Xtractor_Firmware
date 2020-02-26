@@ -20,14 +20,14 @@
 #include <stddef.h>
 
 #include "adc.c"
-#include "jtag.c"
+//#include "jtag.c"
 #include "nand.c"
-#include "nor.c"
+//#include "nor.c"
 #include "sevenseg.c"
-#include "spi.c"
+//#include "spi.c"
 #include "uart.c"
-#include "uart_scanner.c"
-#include "timer.c"
+//#include "uart_scanner.c"
+//#include "timer.c"
 
 static inline void portOut(xtractor_port_t *port, uint8_t b)
 {

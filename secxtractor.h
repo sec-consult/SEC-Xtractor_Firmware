@@ -238,17 +238,6 @@ uint8_t PULLUP = 0;
 uint8_t cancelCurrentOperation = 0;
 uint8_t dumpFast = 0;
 
-#define NAND_ALE (1 << 4)
-#define NAND_CLE (1 << 5)
-#define NAND_WP (1 << 3)
-#define NAND_WE (1 << 2)
-#define NAND_RE (1 << 1)
-#define NAND_CE (1 << 0)
-/*! \brief READY/BUSY input definition. */
-#define NAND_RB (1 << 6)
-
-
-
 /* pin mapping: A31~A0
  * 1111 1111 1111 1111 1111 1111 1111 1111
  *    PORTF|    PORTD|    PortC|    PortB|
