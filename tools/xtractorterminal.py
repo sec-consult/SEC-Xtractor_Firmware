@@ -13,13 +13,13 @@ import re
 import datetime
 import time
 import tempfile
-from binascii import unhexlify, hexlify
+from binascii import unhexlify
 from serial.tools.miniterm import Miniterm, key_description, Transform
 import serial
 import sys
 
 BAUD = 4000000
-EOL = 'lf'
+EOL = 'crlf'
 ENCODING = 'UTF-8'
 HEADER = r'''
 ### ### ###
@@ -27,7 +27,6 @@ HEADER = r'''
  #  ##  #     \/ ___ ___       _ ___  _  ___
   # #   #     /\  |  | |  /\  |   |  | | | |
 ### ### ###  /  \ |  |   /  \ |_  |  |_| |
-
 '''
 
 NL = '\n'
@@ -83,9 +82,7 @@ class XtractorTransformation(Transform):
                 self.destination_file = None
                 return "Dump saved to '{0}' ({1}KB)".format(fname, self.byte_count / KB)
             else:
-                #data = unhexlify(line.replace(' ', ''))
-                #self.destination_file.write(data)
-                data = bytes(line.replace(' ',''), ENCODING);
+                data = unhexlify(line.replace(' ', ''))
                 self.destination_file.write(data)
                 old_byte_count = self.byte_count
                 self.byte_count += len(data)
@@ -98,7 +95,7 @@ class XtractorTransformation(Transform):
         elif line == DUMP_BEGIN_MARKER:
             self.destination_file = tempfile.NamedTemporaryFile(delete=False, dir='.', 
                 prefix='dump_'+re.sub('[^0-9-]', '_', datetime.datetime.now().isoformat()), 
-                suffix='.xtractor', mode='w+b')
+                suffix='.xtractor')
             self.byte_count = 0
             self.start_timestamp = time.time()
             return "Receiving dump ('{0}')...".format(self.destination_file.name)
