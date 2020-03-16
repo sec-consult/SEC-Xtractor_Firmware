@@ -54,17 +54,19 @@ static inline void uartMitMWriteString(char *s);
 static inline void uartWriteString(char *s);
 #pragma endregion
 
-// #pragma region seven segment display
-// static inline void sevensegWriteNumber(uint16_t printed_value);
-// static inline void sevensegShowProgressBar(void);
-// static inline void sevensegInit();
-// #pragma endregion
+#ifdef XTRACTOR_ARCH_AVR
+#pragma region seven segment display
+static inline void sevensegWriteNumber(uint16_t printed_value);
+static inline void sevensegShowProgressBar(void);
+static inline void sevensegInit();
+#pragma endregion
 
-// #pragma region SPI
-// void spiConfigurePins();
-// void spiGDreadID();
-// uint8_t spiRead();
-// #pragma endregion
+#pragma region SPI
+void spiConfigurePins();
+void spiGDreadID();
+uint8_t spiRead();
+#pragma endregion
+#endif
 
 #pragma region NAND
 typedef struct __packed {

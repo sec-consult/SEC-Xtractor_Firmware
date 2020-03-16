@@ -112,15 +112,15 @@ static inline void initPins()
 {
 	port_pin_t* ctrl_port = (port_pin_t*) &NAND_CTRL_PORT.ale;
 	for(uint8_t i=0; i<7; ++i){
-		setInputMode(ctrl_port[i], GPIO_HIGH_Z);
-		setPinDir(ctrl_port[i], IN);
+		setPinDir(ctrl_port[i], OUT);
+		setPinValue(ctrl_port[i], LOW);
 	}
 	for(uint8_t i=0; i<8; ++i){
-		setInputMode(NAND_IO_PORT0[i], GPIO_HIGH_Z);
-		setPinDir(NAND_IO_PORT0[i], IN);
+		setPinDir(ctrl_port[i], OUT);
+		setPinValue(ctrl_port[i], LOW);
 	}
 	for(uint8_t i=0; i<8; ++i){
-		setInputMode(NAND_IO_PORT1[i], GPIO_HIGH_Z);
-		setPinDir(NAND_IO_PORT1[i], IN);
+		setPinDir(ctrl_port[i], OUT);
+		setPinValue(ctrl_port[i], LOW);
 	}
 }

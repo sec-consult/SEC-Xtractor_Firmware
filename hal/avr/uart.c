@@ -34,7 +34,7 @@ ISR(USARTE0_RXC_vect)
  */
 ISR(USARTE0_TXC_vect)
 {
-	terminal_output = 0;
+	//terminal_output = 0;
 	sevensegShowChar('B');
 }
 
@@ -103,11 +103,11 @@ static inline void uartWriteChar(char c)
 
 	PORTQ.DIRSET = PIN3_bm;
 	PORTQ.OUTSET = PIN3_bm;
-	//while(!(USARTE0.STATUS & USART_DREIF_bm));
+	while(!(USARTE0.STATUS & USART_DREIF_bm));
 	USARTE0.DATA = c; //send data to uart tx
 	//terminal_output = 1;
-	while(!(USARTE0.STATUS & USART_TXCIF_bm));
-	USARTE0.STATUS|= USART_TXCIF_bm;
+	//while(!(USARTE0.STATUS & USART_TXCIF_bm));
+	//USARTE0.STATUS|= USART_TXCIF_bm;
 	PORTQ.OUTCLR = PIN3_bm;
 	//while (terminal_output);
 }

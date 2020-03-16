@@ -43,9 +43,9 @@ static inline void dumpByte(uint8_t b)
 			}
 		}
 	}
-	uartWriteChar(b);
-	//uartWriteChar(hexChars[b >> 4]);
-	//uartWriteChar(hexChars[b & 0xF]);
+	//uartWriteChar(b);
+	uartWriteChar(hexChars[b >> 4]);
+	uartWriteChar(hexChars[b & 0xF]);
 	dumpPosition++;
 }
 
@@ -109,8 +109,8 @@ int main(void)
 	uartInit();
 	activateInterrupts();
 	shellInit();
-	//sevensegInit();
-	//initADC();
+	sevensegInit();
+	initADC();
 	initOnfiParam();
 	initPins();
 	while (1)

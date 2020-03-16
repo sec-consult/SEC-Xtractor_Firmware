@@ -87,7 +87,7 @@ static inline void uartInit(void)
 
 	//1, 5 == 4000000 baud
 	//1,3 OVER8 = 8000000 baud
-	USART1->BRR = 1 << USART_BRR_DIV_Mantissa_Pos | 5 << USART_BRR_DIV_Fraction_Pos;
+	USART1->BRR = 1 << USART_BRR_DIV_Mantissa_Pos | 3 << USART_BRR_DIV_Fraction_Pos;
 	GPIOA->OSPEEDR |= (0x3<<GPIO_OSPEEDR_OSPEED9_Pos) | (0x3<<GPIO_OSPEEDR_OSPEED10_Pos);
 	GPIOA->MODER = (GPIOA->MODER & ~GPIO_MODER_MODE10) | GPIO_MODER_MODER10_1;
 	GPIOA->MODER = (GPIOA->MODER & ~GPIO_MODER_MODE9) | GPIO_MODER_MODER9_1; 
@@ -95,8 +95,8 @@ static inline void uartInit(void)
 	GPIOA->AFR[1] = (7 << GPIO_AFRH_AFSEL9_Pos) | (7 << GPIO_AFRH_AFSEL10_Pos);
 	USART1->CR2 &= USART_CR2_STOP_Msk;      //One Stop bit
 	USART1->CR1 |= USART_CR1_RXNEIE;
-	//USART1->CR1 |=  USART_CR1_UE | USART_CR1_OVER8;
-	USART1->CR1 |=  USART_CR1_UE;
+	USART1->CR1 |=  USART_CR1_UE | USART_CR1_OVER8;
+	//USART1->CR1 |=  USART_CR1_UE;
 	USART1->CR1 |= USART_CR1_TE;
 	USART1->CR1 |= USART_CR1_RE;
 	NVIC_SetPriority(USART1_IRQn, 0);
@@ -135,16 +135,11 @@ void uartWriteChar(char c)
 	checkUartFlowControl(); 
 	while(!(USART1->SR & USART_SR_TXE));
 	USART1->DR = c;
-	while(!(USART1->SR & USART_SR_TC));
-	USART1->SR &= ~USART_SR_TC;
-	terminal_output = 0;
+	
 	// // before writing data, check that receiver wants data
 	// checkUartFlowControl(); 
 	// while(!(USART3->SR & USART_SR_TXE));
 	// USART3->DR = c;
-	// while(!(USART3->SR & USART_SR_TC));
-	// USART3->SR &= ~USART_SR_TC;
-	// terminal_output = 0;
 }
 
 

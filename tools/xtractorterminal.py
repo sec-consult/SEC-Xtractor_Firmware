@@ -18,8 +18,8 @@ from serial.tools.miniterm import Miniterm, key_description, Transform
 import serial
 import sys
 
-BAUD = 4000000
-EOL = 'crlf'
+BAUD = 8000000
+EOL = 'lf'
 ENCODING = 'UTF-8'
 HEADER = r'''
 ### ### ###

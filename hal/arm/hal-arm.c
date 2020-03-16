@@ -22,7 +22,6 @@
 // #include "jtag.c"
 #include "nand.c"
 // #include "nor.c"
-// #include "sevenseg.c"
 // #include "spi.c"
 #include "uart.c"
 // #include "uart_scanner.c"

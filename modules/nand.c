@@ -578,12 +578,13 @@ static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, ui
 		for (int i = 0; i < pagesize; i++)
 		{
 			if(supports_x16){
-				onfiDataIn((uint8_t) pattern,(uint8_t) (pattern >> 8));
+				//onfiDataIn((uint8_t) pattern,(uint8_t) (pattern >> 8));
+				onfiDataIn(i*2,i*2+1);
 			}else{
 				if(i%2){
-					onfiDataIn((uint8_t) pattern, 0);
+					onfiDataIn((uint8_t) block, 0);
 				}else{
-					onfiDataIn((uint8_t) pattern>>8, 0);
+					onfiDataIn((uint8_t) page, 0);
 				}
 			}
 		}
@@ -598,7 +599,7 @@ static inline void onfiWriteData(onfi_param_page_t *params, uint16_t pattern, ui
 		setPinValue(NAND_CTRL_PORT.ce, HIGH);
 		setPinValue(NAND_CTRL_PORT.wp, LOW);
 		page++;
-		if (page == 64)
+		if (page == params->pages_per_block)
 		{
 			page = 0;
 			block++;
@@ -694,10 +695,10 @@ static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t suppo
 			}
 		}
 		if(!silent){
+			dumpByte(temp_low);
 			if(supports_x16){
 				dumpByte(temp_high);
 			}
-			dumpByte(temp_low);
 		}
 	}
 	onfiDataOutEnd();
@@ -719,75 +720,17 @@ static inline uint8_t ecc_repetition_decode(uint8_t rep1, uint8_t rep2, uint8_t 
 static inline uint32_t onfiVerifiedDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
 	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read)
 {
-	uint8_t page_1[bytes_to_read];
-	uint8_t page_2[bytes_to_read];
-	uint8_t page_3[bytes_to_read];	
-	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_1);	
-	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_2);
-	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, page_3);
+	uint8_t copy_1[bytes_to_read];
+	uint8_t copy_2[bytes_to_read];
+	uint8_t copy_3[bytes_to_read];	
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, copy_1);	
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, copy_2);
+	onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,1, copy_3);
 
 	for(uint32_t i= 0; i<bytes_to_read; i++){
-		dumpByte(ecc_repetition_decode(page_1[i],page_2[i],page_3[i]));
+		dumpByte(ecc_repetition_decode(copy_1[i],copy_2[i],copy_3[i]));
 	}
 }
-
-
-// static inline uint32_t onfiDumpPage(uint32_t block, uint32_t page, uint8_t supports_x16, uint8_t row_cycles, 
-// 	uint8_t col_cycles, uint8_t page_bits, uint32_t bytes_to_read, uint8_t silent, uint8_t* buffer)
-// {
-// 	uint32_t checksum = 0;
-
-// 	setNandIOValue(0x0000);
-// 	setNandIODir(OUT);
-
-// 	onfiCommand(ONFI_CMD_READ_CYCLE_1);
-
-// 	onfiAddressStart();
-
-// 	/* column addressing */
-// 	for(uint8_t i=0; i<col_cycles; ++i){
-// 		onfiAddress(0x00);
-// 	}
-
-// 	/* row addressing */
-// 	uint64_t row_address = page;
-// 	row_address |= (((uint64_t)block)<<page_bits);
-
-// 	for(uint8_t i=0; i<row_cycles; i++) {
-// 		onfiAddress((uint8_t)(row_address>>(i*8)));
-// 	}
-
-// 	onfiAddressEnd();
-// 	onfiCommand(ONFI_CMD_READ_CYCLE_2);
-
-// 	/* end of sending command, start reading the whole page */
-// 	onfiDataOutStart();
-// 	while(!getNandRB());
-
-// 	bytes_to_read = bytes_to_read / (supports_x16 + 1);
-	
-// 	for (uint16_t i = 0; i < bytes_to_read; ++i)
-// 	{
-// 		uint8_t temp_high = 0;
-// 		uint8_t temp_low = 0;
-		
-// 		onfiDataOut(&temp_low, &temp_high);
-
-// 		if(!silent){
-// 			if(supports_x16){
-// 				dumpByte(temp_high);
-// 			}
-// 			dumpByte(temp_low);
-// 		}
-		
-// 		checksum += (((uint16_t)temp_high) << 8) + temp_low;
-// 	}
-// 	onfiDataOutEnd();
-// 	delay_ns(100);
-// 	//_delay_32mhz_cycles(nandDelayTime);
-
-// 	return checksum;
-// }
 
 /**
 *@brief				Writes a pattern throughout the whole NAND
@@ -801,7 +744,7 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uin
 	uint8_t col_cycles = params->address_cycles >> 4;
 	uint8_t page_bits = 255; //Loop counts one bit too much
 	uint32_t block, page;
-	int i;
+	//int i;
 	uint8_t abort = 0;
 	uint32_t reference_checksum, test_checksum, test_checksum2;
 	uint32_t bytes_to_read = params->bytes_per_page + (read_ecc * params->spare_bytes_per_page);
@@ -824,7 +767,7 @@ static inline void onfiReadData(onfi_param_page_t *params, uint8_t read_ecc, uin
 			if(verify_read_iterations){
 				onfiVerifiedDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read);
 			}else{
-				onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read, 0, NULL);
+				onfiDumpPage(block, page, supports_x16, row_cycles, col_cycles, page_bits, bytes_to_read,0, NULL);
 			}
 
 			// for(i=0; i<verify_read_iterations; i++){
