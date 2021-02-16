@@ -185,11 +185,11 @@ static inline int isOperationCanceled();
 // irenum functions to be run. Define the values
 // as the index for the pins[] array of the found
 // jtag pin:
-//#define	TCK                      3
-//#define	TMS                      0
-//#define	TDO                      2
-//#define	TDI                      1
-//#define	TRST                     4
+// #define	TCK                      3
+// #define	TMS                      0
+// #define	TDO                      2
+// #define	TDI                      1
+// #define	TRST                     4
 
 // Pattern used for scan() and loopback() tests
 #define PATTERN_LEN 64

@@ -116,7 +116,7 @@ def main(args):
     device = args[0]
 
     serial_instance = serial.serial_for_url(
-        device, BAUD, parity='N', rtscts=False, xonxoff=True)
+        device, BAUD, parity='N', rtscts=True, xonxoff=False)
 
     miniterm = XtractorMiniterm(serial_instance, echo=False,
                                 eol=EOL, filters=['default'])

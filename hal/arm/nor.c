@@ -12,12 +12,40 @@
  */
 #include "definitions.h"
 
+#pragma unroll_completely
+__attribute__((optimize("unroll-loops")))
+static inline void setNorPortValue(const port_pin_t *port, uint8_t val)
+{
+    for(uint8_t i=0; i<8; i++){
+	 	setPinValue(port[i], val & 0x1);
+        val >>=1;
+    }
+}
+#pragma unroll_completely
+__attribute__((optimize("unroll-loops")))
+static inline void setNorPortMode(const port_pin_t *port, const uint8_t dir)
+{
+    for(uint8_t i=0; i<8; i++){
+	 	setPinDir(port[i], dir);
+    }
+}
+#pragma unroll_completely
+__attribute__((optimize("unroll-loops")))
+static inline void getNorPortValue(port_pin_t *port, uint8_t *value)
+{
+	for(int8_t i=7; i>=0; i--){
+		uint8_t data = getPinValue(port[i]);
+		*value = (*value << 1) | data;
+	}
+}
+//TODO: Check if Tyimings work
 /**
 *@brief Selects Byte transfer mode
 */
 static inline void norModeByte()
 {
-
+    setPinValue(nor_ctrl_port.byte, LOW);
+    setNorPortMode(nor_data_port[1], OUT);
 }
 
 /**
@@ -25,7 +53,7 @@ static inline void norModeByte()
 */
 static inline void norModeWord()
 {
-
+    setPinValue(nor_ctrl_port.byte, HIGH);
 }
 
 /**
@@ -33,7 +61,20 @@ static inline void norModeWord()
 */
 static void norResetFlash()
 {
+    setPinValue(nor_ctrl_port.ce, HIGH);
+    setPinValue(nor_ctrl_port.oe, HIGH);
+    setPinValue(nor_ctrl_port.reset, LOW);
+    _delay_us(5000);
+    setPinValue(nor_ctrl_port.reset, HIGH);
+    
+    setPinValue(nor_ctrl_port.ce, LOW);
+    setPinValue(nor_ctrl_port.oe, LOW);
+    _delay_us(5000);
 
+    setPinValue(nor_ctrl_port.ce, HIGH);
+    setPinValue(nor_ctrl_port.oe, HIGH);
+
+    while (!getPinValue(nor_ctrl_port.ryby));
 }
 
 /**
@@ -41,7 +82,13 @@ static void norResetFlash()
 */
 static inline void norStartReadData()
 {
+    _delay_us(2);
+    setPinValue(nor_ctrl_port.reset, HIGH);
+    _delay_us(1);
 
+    setPinValue(nor_ctrl_port.we, HIGH);
+    setPinValue(nor_ctrl_port.ce, LOW);
+    setPinValue(nor_ctrl_port.oe, LOW);
 }
 
 /**
@@ -49,7 +96,9 @@ static inline void norStartReadData()
 */
 static inline void norEndReadData()
 {
-  
+  _delay_us(5);
+  setPinValue(nor_ctrl_port.oe, HIGH);
+  setPinValue(nor_ctrl_port.ce, HIGH);
 }
 
 /**
@@ -58,7 +107,19 @@ static inline void norEndReadData()
 */
 static inline uint16_t norRead16DataBits(uint32_t address)
 {
-    uint16_t databyte = 1;
+    uint16_t databyte;
+    //apply address
+    setNorPortValue(nor_addr_port[0],(uint8_t)(address & 0x000000FF));
+    setNorPortValue(nor_addr_port[1],(uint8_t)((address & 0x0000FF00) >> 8));
+    setNorPortValue(nor_addr_port[2],(uint8_t)((address & 0x00FF0000) >> 16));
+    setNorPortValue(nor_addr_port[3],(uint8_t)((address & 0xFF000000) >> 24));
+    
+    uint8_t lower;
+    getNorPortValue(nor_data_port[0], &lower);
+    uint8_t upper;
+    getNorPortValue(nor_data_port[0], &upper);
+
+    databyte = ((uint16_t)upper)<<8 | lower;
     return databyte;
 }
 
@@ -69,8 +130,26 @@ static inline uint16_t norRead16DataBits(uint32_t address)
 */
 static inline uint8_t norRead8DataBits(uint32_t address)
 {
-    uint8_t databyte=1;
+    uint8_t databyte;
     
+    setPinValue(nor_ctrl_port.we, HIGH);
+
+    setPinValue(nor_data_port[1][7], (uint8_t)(address & 0x00000001));// A-1/Q15
+
+     //apply address
+    setNorPortValue(nor_addr_port[0],(uint8_t)((address & 0x000001FE) >> 1));
+    setNorPortValue(nor_addr_port[1],(uint8_t)((address & 0x0001FE00) >> 9));
+    setNorPortValue(nor_addr_port[2],(uint8_t)((address & 0x01FE0000) >> 17));
+    setNorPortValue(nor_addr_port[3],(uint8_t)((address & 0xFE000000) >> 25));
+
+    setPinValue(nor_ctrl_port.ce, LOW);
+    setPinValue(nor_ctrl_port.oe, LOW);
+
+    getNorPortValue(nor_data_port[0], &databyte);
+
+    setPinValue(nor_ctrl_port.oe, HIGH);
+    setPinValue(nor_ctrl_port.ce, HIGH);
+
     return databyte;
 }
 

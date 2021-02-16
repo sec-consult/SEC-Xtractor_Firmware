@@ -20,7 +20,7 @@ static inline void norModeByte()
     NOP2;    
     /* clear BYTE# */
     NOR_CTRL_PORT.OUTCLR = NOR_BYTE;
-    NOR_DATA_PORT1.DIRSET = 0xF0; // Configure Q15-Q8 as output
+    NOR_DATA_PORT1.DIRSET = 0xFF; // Configure Q15-Q8 as output
     NOP2;
 }
 

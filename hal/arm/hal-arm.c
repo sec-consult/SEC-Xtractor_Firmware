@@ -19,9 +19,10 @@
 #include <stddef.h>
 
 // #include "adc.c"
-// #include "jtag.c"
+#include "gpio.c"
+#include "jtag.c"
 #include "nand.c"
-// #include "nor.c"
+#include "nor.c"
 // #include "spi.c"
 #include "uart.c"
 // #include "uart_scanner.c"

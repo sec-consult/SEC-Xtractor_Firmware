@@ -13,9 +13,9 @@
 #include "hal.h"
 #include "secxtractor.h"
 
-// #include "modules/jtag.c"
+#include "modules/jtag.c"
 #include "modules/nand.c"
-// #include "modules/nor.c"
+//#include "modules/nor.c"
 // #include "modules/spi.c"
 // #include "modules/uart_scanner.c"
 
@@ -95,38 +95,38 @@ shell_command_t commands[] = {
 	SHELL_COMMAND("fastdump", cmdFastdump, "<0|1>", 
 		"Enable or disable fast dumping (skip formating and dump 1K in every line)."),
 	/* JTAG */
-	// SHELL_COMMAND("pattern scan single", cmdPatternScanSingle, "", 
-	// 	"Probe for a present JTAG port by using the pre-selected JTAG pin configuration"),
-	// SHELL_COMMAND("pattern scan", cmdPatternScan, "", 
-	// 	"Scans for a present JTAG port on all activated A pins of the SEC Xtractor."),
-	// SHELL_COMMAND("idcode scan", cmdIdcodeScan, "", 
-	// 	"Assumes IDCODE is default DR on reset. Ignores TDI." HELPNL
-	// 	"Sets TAP state to DR_SHIFT and prints TDO to console" HELPNL
-	// 	"when TDO appears active. Human examination required to" HELPNL
-	// 	"determine if actual IDCODE is present. Run several" HELPNL
-	// 	"times to check for consistancy or compare against" HELPNL
-	// 	"active tdo lines found with loopback test."),
-	// SHELL_COMMAND("bypass scan", cmdBypassScan, "", 
-	// 	"Assumes BYPASS is default DR on reset. Ignores TMS and" NL
-	// 	"shifts pattern[] through TDI/TDO using TCK for clock." NL),
-	// SHELL_COMMAND("boundary scan", cmdBoundaryScan, "",
-	// 	"Checks code defined tdo for 4000+ bits."),
-	// SHELL_COMMAND("pattern set", cmdPatternSet, "[numbers_from_1_to_32]", ""),
-	// SHELL_COMMAND("pinlen set", cmdPinlenSet, "[number_in_the_range_from_1_to_32]", 
-	// 	"Set length of pins for brute force JTAG."),
-	// SHELL_COMMAND("tck set", cmdTckSet, "[number_in_the_range_from_1_to_32]", ""),
-	// SHELL_COMMAND("tms set", cmdTmsSet, "[number_in_the_range_from_1_to_32]", ""),
-	// SHELL_COMMAND("tdi set", cmdTdiSet, "[number_in_the_range_from_1_to_32]", ""),
-	// SHELL_COMMAND("tdo set", cmdTdoSet, "[number_in_the_range_from_1_to_32]", ""),
-	// SHELL_COMMAND("trst set", cmdTrstSet, "[number_in_the_range_from_1_to_32]", ""),
-	// SHELL_COMMAND("loopback check", cmdLoopbackCheck, "", ""),
-	// SHELL_COMMAND("ir len set", cmdIrLenSet, "[number_in_the_range_from_1_to_40]", ""),
-	// SHELL_COMMAND("flashsize set", cmdFlashsizeSet, "", ""),
-	// SHELL_COMMAND("delay jtag", cmdDelayJtag, "[+/-]", 
-	// 	"No arguments: Slows down the JTAG scan." HELPNL
-	// 	"With arguments + or -: Reduces or increases the scan delay by 1000us"),
-	// SHELL_COMMAND("irenum", cmdIrEnum, "", 
-	// 	"Sets every possible Instruction Register and then checks the output of the Data Register."),
+	SHELL_COMMAND("pattern scan single", cmdPatternScanSingle, "", 
+		"Probe for a present JTAG port by using the pre-selected JTAG pin configuration"),
+	SHELL_COMMAND("pattern scan", cmdPatternScan, "", 
+		"Scans for a present JTAG port on all activated A pins of the SEC Xtractor."),
+	SHELL_COMMAND("idcode scan", cmdIdcodeScan, "", 
+		"Assumes IDCODE is default DR on reset. Ignores TDI." HELPNL
+		"Sets TAP state to DR_SHIFT and prints TDO to console" HELPNL
+		"when TDO appears active. Human examination required to" HELPNL
+		"determine if actual IDCODE is present. Run several" HELPNL
+		"times to check for consistancy or compare against" HELPNL
+		"active tdo lines found with loopback test."),
+	SHELL_COMMAND("bypass scan", cmdBypassScan, "", 
+		"Assumes BYPASS is default DR on reset. Ignores TMS and" NL
+		"shifts pattern[] through TDI/TDO using TCK for clock." NL),
+	SHELL_COMMAND("boundary scan", cmdBoundaryScan, "",
+		"Checks code defined tdo for 4000+ bits."),
+	SHELL_COMMAND("pattern set", cmdPatternSet, "[numbers_from_1_to_32]", ""),
+	SHELL_COMMAND("pinlen set", cmdPinlenSet, "[number_in_the_range_from_1_to_32]", 
+		"Set length of pins for brute force JTAG."),
+	SHELL_COMMAND("tck set", cmdTckSet, "[number_in_the_range_from_1_to_32]", ""),
+	SHELL_COMMAND("tms set", cmdTmsSet, "[number_in_the_range_from_1_to_32]", ""),
+	SHELL_COMMAND("tdi set", cmdTdiSet, "[number_in_the_range_from_1_to_32]", ""),
+	SHELL_COMMAND("tdo set", cmdTdoSet, "[number_in_the_range_from_1_to_32]", ""),
+	SHELL_COMMAND("trst set", cmdTrstSet, "[number_in_the_range_from_1_to_32]", ""),
+	SHELL_COMMAND("loopback check", cmdLoopbackCheck, "", ""),
+	SHELL_COMMAND("ir len set", cmdIrLenSet, "[number_in_the_range_from_1_to_40]", ""),
+	SHELL_COMMAND("flashsize set", cmdFlashsizeSet, "", ""),
+	SHELL_COMMAND("delay jtag", cmdDelayJtag, "[+/-]", 
+		"No arguments: Slows down the JTAG scan." HELPNL
+		"With arguments + or -: Reduces or increases the scan delay by 1000us"),
+	SHELL_COMMAND("irenum", cmdIrEnum, "", 
+		"Sets every possible Instruction Register and then checks the output of the Data Register."),
 	// /* NAND */
 	SHELL_COMMAND("info nand", cmdInfoNand, "", 
 	 	"Displays information about the NAND memory gathered from the ONFI parameter pages."),

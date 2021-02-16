@@ -55,17 +55,17 @@ static inline void uartWriteString(char *s);
 #pragma endregion
 
 #ifdef XTRACTOR_ARCH_AVR
-#pragma region seven segment display
-static inline void sevensegWriteNumber(uint16_t printed_value);
-static inline void sevensegShowProgressBar(void);
-static inline void sevensegInit();
-#pragma endregion
+    #pragma region seven segment display
+    static inline void sevensegWriteNumber(uint16_t printed_value);
+    static inline void sevensegShowProgressBar(void);
+    static inline void sevensegInit();
+    #pragma endregion
 
-#pragma region SPI
-void spiConfigurePins();
-void spiGDreadID();
-uint8_t spiRead();
-#pragma endregion
+    #pragma region SPI
+    void spiConfigurePins();
+    void spiGDreadID();
+    uint8_t spiRead();
+    #pragma endregion
 #endif
 
 #pragma region NAND
@@ -228,6 +228,12 @@ static inline void initOnfiParam();
 static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progress);
 #pragma endregion
 
+#pragma help_functions  
+#if defined(XTRACTOR_ARCH_ARM)
+    static inline void _delay_us(const uint32_t delay);
+#endif
+#pragma endregion
+
 // #pragma region NOR
 // static void norResetFlash();
 // static inline void norModeWord();
@@ -258,15 +264,10 @@ static inline void onfiEraseAll(onfi_param_page_t *params, uint8_t enable_progre
 // static inline uint64_t getTime(void);
 // #pragma endregion
 
-// #pragma region JTAG
-// static inline uint8_t jtagReadPin(uint8_t pin);
-// static inline void jtagWritePin(uint8_t pin, uint8_t level);
-// void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen);
-// void jtagTapState(char jtagTapState[], int tck, int tms);
-// static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst);
-// static void jtagPulseTms(int tck, int tms, int s_tms);
-// static void jtagPulseTdi(int tck, int tdi, int s_tdi);
-// uint8_t jtagPulseTdo(int tck, int tdo);
-// #pragma endregion
+#pragma region JTAG
+static inline void setPinMode(uint8_t pin, uint8_t inout);
+static inline uint8_t jtagReadPin(uint8_t pin);
+static inline void jtagWritePin(uint8_t pin, uint8_t level);
+#pragma endregion
 
 #endif

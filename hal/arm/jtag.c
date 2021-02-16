@@ -9,54 +9,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this\n
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.          \n
  * 
- * @authors Thomas Weber, Wolfgang Ettlinger
+ * @authors Thomas Weber, Wolfgang Ettlinger, Steffen Robertz
  */
 
 static inline void setPinMode(uint8_t pin, uint8_t inout) //inout = 1 -> output enabled
 {
-
+	port_pin_t pin_info = JTAG_port[pin];
+	setPinDir(pin_info, inout);
 }
 
 static inline void jtagWritePin(uint8_t pin, uint8_t level)
 {
-
+	port_pin_t pin_info = JTAG_port[pin];
+	setPinValue(pin_info, level);
 }
 
 static inline uint8_t jtagReadPin(uint8_t pin)
 {
-    return 0;
-}
-
-/*****  JTAG Functionality from JTAGenum *****/
-/*
- * Set the JTAG TAP state machine
- */
-void jtagTapState(char jtagTapState[], int tck, int tms)
-{
-
-}
-
-void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen)
-{
-
-}
-
-static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst)
-{
-
-}
-
-static void jtagPulseTms(int tck, int tms, int s_tms)
-{
-
-}
-
-static void jtagPulseTdi(int tck, int tdi, int s_tdi)
-{
-
-}
-
-uint8_t jtagPulseTdo(int tck, int tdo)
-{
-
+	port_pin_t pin_info = JTAG_port[pin];
+	return getPinValue(pin_info);
 }

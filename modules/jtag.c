@@ -9,8 +9,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this\n
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.          \n
  * 
- * @authors Thomas Weber, Wolfgang Ettlinger
+ * @authors Thomas Weber, Wolfgang Ettlinger, Steffen Robertz
  */
+#include "../secxtractor.h"
+#include "../hal.h"
+
 uint8_t pinslen = 5;
 uint8_t set_tck = 3;
 uint8_t set_tms = 0;
@@ -21,6 +24,106 @@ uint8_t set_trst = 4;
 uint32_t flashsize = 0;
 
 uint8_t set_ir_len = 8;
+
+/*****  JTAG Functionality from JTAGenum *****/
+/*
+ * Set the JTAG TAP state machine
+ */
+void jtagTapState(char jtagTapState[], int tck, int tms)
+{
+	while (*jtagTapState)
+	{ // exit when string \0 terminator encountered
+		if (jtagDelay)
+			_delay_us(50);
+		jtagWritePin(tck, 0);
+		jtagWritePin(tms, *jtagTapState - '0'); // conv from ascii pattern
+		jtagWritePin(tck, 1);				 // rising edge shifts in TMS
+		*jtagTapState++;
+	}
+}
+
+void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen)
+{
+	// default all to INPUT state
+	for (int i = 0; i < pinslen; i++)
+	{
+		setPinMode(i, 0);
+		// internal pullups default to logic 1:
+		//		if (PULLUP) jtagWritePin(i, 1);
+	}
+	// TCK = output
+	if (tck != IGNOREPIN)
+		setPinMode(tck, 1);
+	// TMS = output
+	if (tms != IGNOREPIN)
+		setPinMode(tms, 1);
+	// tdi = output
+	if (tdi != IGNOREPIN)
+		setPinMode(tdi, 1);
+	// ntrst = output, fixed to 1
+	if (ntrst != IGNOREPIN)
+	{
+		setPinMode(ntrst, 1);
+		jtagWritePin(ntrst, 1);
+	}
+}
+
+static void jtagPrintPins(int tck, int tms, int tdo, int tdi, int ntrst)
+{
+	uint8_t buffer[6];
+	if (ntrst != IGNOREPIN)
+	{
+		uartWriteString("ntrst:\tA");
+		snprintf(buffer, sizeof(buffer), "%d", ntrst);
+		uartWriteString(buffer);
+		uartWriteString("\n\r");
+	}
+	uartWriteString("tck:\tA");
+	snprintf(buffer, sizeof(buffer), "%d", tck);
+	uartWriteString(buffer);
+	uartWriteString("\n\rtms:\tA");
+	snprintf(buffer, sizeof(buffer), "%d", tms);
+	uartWriteString(buffer);
+	uartWriteString("\n\rtdo:\tA");
+	snprintf(buffer, sizeof(buffer), "%d", tdo);
+	uartWriteString(buffer);
+	if (tdi != IGNOREPIN)
+	{
+		uartWriteString("\n\rtdi:\tA");
+		snprintf(buffer, sizeof(buffer), "%d", tdi);
+		uartWriteString(buffer);
+		uartWriteString("\n\r");
+	}
+}
+
+static void jtagPulseTms(int tck, int tms, int s_tms)
+{
+	jtagWritePin(tck, 0);
+	jtagWritePin(tms, s_tms);
+	jtagWritePin(tck, 1);
+}
+
+static void jtagPulseTdi(int tck, int tdi, int s_tdi)
+{
+	if (jtagDelay)
+		_delay_us(50);
+	if (tck != IGNOREPIN)
+		jtagWritePin(tck, 0);
+	jtagWritePin(tdi, s_tdi);
+	if (tck != IGNOREPIN)
+		jtagWritePin(tck, 1);
+}
+
+uint8_t jtagPulseTdo(int tck, int tdo)
+{
+	uint8_t tdo_read;
+	if (jtagDelay)
+		_delay_us(50);
+	jtagWritePin(tck, 0); // read in TDO on falling edge
+	tdo_read = jtagReadPin(tdo);
+	jtagWritePin(tck, 1);
+	return tdo_read;
+}
 
 static void bruteforce(int variables[], int count, int index, int num_variables, void(*action)(int[]))
 {
@@ -338,7 +441,7 @@ static inline void ir_state(char state[], int tck, int tms, int tdi)
 	for (int i = 0; i < set_ir_len; i++)
 	{
 		if (jtagDelay)
-			DELAY_US(50);
+			_delay_us(50);
 		// TAP/TMS changes to Exit IR state (1) must be executed
 		// at same time that the last TDI bit is sent:
 		if (i == set_ir_len - 1)
