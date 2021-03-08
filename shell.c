@@ -13,8 +13,8 @@
 #include "hal.h"
 #include "secxtractor.h"
 
-#include "modules/jtag.c"
-#include "modules/nand.c"
+#include "shell_modules/jtag.c"
+#include "shell_modules/nand.c"
 //#include "modules/nor.c"
 // #include "modules/spi.c"
 // #include "modules/uart_scanner.c"

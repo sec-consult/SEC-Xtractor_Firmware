@@ -8,9 +8,11 @@ CCFLAGS_AVR=-mmcu=atxmega128a1 -Os -std=gnu99 -DXTRACTOR_ARCH_AVR -DF_CPU=320000
 # CC_TEST=gcc
 # CCFLAGS_TEST=-Os -std=gnu99 -DXTRACTOR_ARCH_TEST
 
-SRC_FILES=*.c *.h modules/*.c
+SRC_FILES=*.c *.h function_modules/*.c shell_modules/*.c
 SRC_FILES_AVR=$(SRC_FILES) hal/avr/*.c hal/avr/*.h
 SRC_FILES_TEST=$(SRC_FILES) hal-test/*.c hal-test/*.h
+
+AVR_BUILD_DIR=build/avr/
 
 OBJECTS_AVR=*.o
 
@@ -18,7 +20,7 @@ LDFLAGS_AVR=-mmcu=atxmega128a1 -g
 
 PLATFORM_AVR=x128a1
 
-SERIAL_PORT=/dev/ttyUSB3
+SERIAL_PORT=/dev/ttyUSB0
 BAUD=4000000
 
 AVRDUDE_USB=avrdude -p $(PLATFORM_AVR) -P usb -c atmelice_pdi 
@@ -57,13 +59,13 @@ avr: main.hex
 ################################################################################
 
 main.hex: main.bin
-	avr-objcopy -j .text -j .data -O ihex $^ $@
+	avr-objcopy -j .text -j .data -O ihex $(AVR_BUILD_DIR)$^ $(AVR_BUILD_DIR)$@
 
 main.bin: consume_flags $(SRC_FILES_AVR)
-	$(CC_AVR) $(CCFLAGS_AVR) main.c -o $@
+	$(CC_AVR) $(CCFLAGS_AVR) main.c -o $(AVR_BUILD_DIR)$@
 
 main.o: consume_flags $(SRC_FILES_AVR)
-	$(CC_AVR) $(CCFLAGS_AVR) -c main.c -o $@
+	$(CC_AVR) $(CCFLAGS_AVR) -c main.c -o $(AVR_BUILD_DIR)$@
 
 # hal-avr: consume_flags $(SRC_FILES_AVR)
 # 	$(CC_AVR) $(CCFLAGS_AVR) -c $(SRC_FILES_AVR) -o $^
@@ -72,7 +74,7 @@ main.o: consume_flags $(SRC_FILES_AVR)
 # 	$(CC_AVR) $(LDFLAGS) -o $@ $^
 
 bootloader.bin: bootloader.c
-	$(CC_AVR) $(CCFLAGS_AVR) bootloader.c -o $@
+	$(CC_AVR) $(CCFLAGS_AVR) bootloader.c -o $(AVR_BUILD_DIR)$@
 
 # bootloader
 bootloader.compiled: Xmega_Bootloader/*
@@ -94,12 +96,12 @@ bootloader-alive: reset-device
 	$(AVRDUDE_SERIAL)
 
 flash-main-programmer: main.hex programmer-alive
-	$(AVRDUDE_USB) -U flash:w:main.hex
+	$(AVRDUDE_USB) -U flash:w:$(AVR_BUILD_DIR)main.hex
 
 flash-main-serial: main.hex bootloader-alive
 	# avrdude does not support flash-erase for avr911
 	# there seems to be a problem with verification, as some bytes appear to not arrive
-	$(AVRDUDE_SERIAL) -e -D -V -U flash:w:main.hex
+	$(AVRDUDE_SERIAL) -e -D -V -U flash:w:$(AVR_BUILD_DIR)main.hex
 
 flash-fuses:
 	$(AVRDUDE_USB) -U fuse0:w:$(FUSE0):m -U fuse1:w:$(FUSE1):m -U fuse2:w:$(FUSE2):m 
@@ -125,7 +127,7 @@ main-test: $(SRC_FILES_TEST)
 TARGET = main
 OPT = -Og
 DEBUG = 1
-BUILD_DIR = build_arm
+BUILD_DIR = build/arm/
 C_SOURCES_ARM = main.c
 ASM_SOURCES_ARM = hal/arm/startup_stm32f446xx.s
 PREFIX = arm-none-eabi-

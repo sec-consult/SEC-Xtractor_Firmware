@@ -11,8 +11,6 @@
  * 
  * @authors Thomas Weber, Wolfgang Ettlinger, Steffen Robertz
  */
-#include "../../secxtractor.h"
-#include "../../hal.h"
 
 static inline void setPinMode(uint8_t pin, uint8_t inout) //inout = 1 -> output enabled
 {

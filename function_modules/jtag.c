@@ -11,17 +11,15 @@
  * 
  * @authors Thomas Weber, Wolfgang Ettlinger, Steffen Robertz
  */
-#include "../secxtractor.h"
-#include "../hal.h"
 
-uint8_t pinslen = 5;
-uint8_t set_tck = 3;
-uint8_t set_tms = 0;
-uint8_t set_tdo = 2;
-uint8_t set_tdi = 1;
-uint8_t set_trst = 4;
+//uint8_t pinslen = 5;
+//uint8_t set_tck = 3;
+//uint8_t set_tms = 0;
+//uint8_t set_tdo = 2;
+//uint8_t set_tdi = 1;
+//uint8_t set_trst = 4;
 
-uint32_t flashsize = 0;
+//uint32_t flashsize = 0;
 
 uint8_t set_ir_len = 8;
 
@@ -42,6 +40,11 @@ void jtagTapState(char jtagTapState[], int tck, int tms)
 	}
 }
 
+void jtagSetIRLen(uint8_t ir_len)
+{
+	set_ir_len = ir_len;
+}
+
 void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen)
 {
 	// default all to INPUT state
@@ -60,6 +63,9 @@ void jtagInitPins(int tck, int tms, int tdi, int ntrst, uint8_t pinslen)
 	// tdi = output
 	if (tdi != IGNOREPIN)
 		setPinMode(tdi, 1);
+	// tdo = input
+	if (tdi != IGNOREPIN)
+		setPinMode(tdi, 0);
 	// ntrst = output, fixed to 1
 	if (ntrst != IGNOREPIN)
 	{
@@ -125,7 +131,7 @@ uint8_t jtagPulseTdo(int tck, int tdo)
 	return tdo_read;
 }
 
-static void bruteforce(int variables[], int count, int index, int num_variables, void(*action)(int[]))
+static void bruteforce(int variables[], int count, int index, int num_variables, void(*action)(int[], uint8_t))
 {
 	int j;
 	int *i = &variables[index];
@@ -147,7 +153,7 @@ static void bruteforce(int variables[], int count, int index, int num_variables,
 		{
 			if(index == num_variables - 1)
 			{
-				action(variables);
+				action(variables, count);
 			}
 			else
 			{
@@ -215,7 +221,7 @@ static uint8_t check_data(char pattern[], int iterations, int tck, int tdi, int 
 	return nr_toggle > 1 ? nr_toggle : 0;
 }
 
-static void patternScanTest(int pins[])
+static void patternScanTest(int pins[], uint8_t pinslen)
 {
 	uint8_t tck = pins[0];
 	uint8_t tms = pins[1];
@@ -258,7 +264,7 @@ static void patternScanTest(int pins[])
 	}
 }
 
-static void loopbackTest(int pins[])
+static void loopbackTest(int pins[], uint8_t pinslen)
 {
 	int checkdataret = 0;
 	uint8_t reg_len;
@@ -324,7 +330,7 @@ static inline const char* getVendor(uint32_t idcode)
 	}
 }
 
-static void idcodeTest(int pins[])
+static void idcodeTest(int pins[], uint8_t pinslen)
 {
 	int i, j;
 	int tdo_read;
@@ -393,7 +399,7 @@ static void idcodeTest(int pins[])
 	}
 }
 
-static void bypassScanTest(int pins[])
+static void bypassScanTest(int pins[], uint8_t pinslen)
 {
 	int checkdataret;
 	uint8_t reg_len;
@@ -468,7 +474,7 @@ static inline void ir_state(char state[], int tck, int tms, int tdi)
 static inline void sample(int iterations, int tck, int tms, int tdi, int tdo, int ntrst)
 {
 	uartWriteString(OUTPUT_BOUNDARY_THICK "Starting sample (boundary scan)..." NL);
-	jtagInitPins(tck, tms, tdi, ntrst, pinslen);
+	jtagInitPins(tck, tms, tdi, ntrst, 0);
 
 	// send instruction and go to ShiftDR
 	ir_state(IR_SAMPLE, tck, tms, tdi);
@@ -501,7 +507,7 @@ static inline void brute_ir(int iterations, int tck, int tms, int tdi, int tdo, 
 					"IR_LEN set to ");
 	uartprintf("%d" NL, set_ir_len);
 	
-	jtagInitPins(tck, tms, tdi, ntrst, pinslen);
+	jtagInitPins(tck, tms, tdi, ntrst, 0);
 	int iractive;
 	uint8_t tdo_read;
 	uint8_t prevread;
@@ -539,234 +545,4 @@ static inline void brute_ir(int iterations, int tck, int tms, int tdi, int tdo, 
 			uartprintf("%d\tIr %p\tbits changed %d" NL, prevread, ir_buf, iractive);
 		}
 	}
-}
-
-static inline void cmdPatternSet(char input[64])
-{
-	for (int i = 0; i < 64; i++)
-	{
-		pattern[i] = input[i];
-	}
-	uartprintf("new pattern set [%s]" NL, pattern);
-	return;
-}
-
-
-void cmdPatternScanSingle(char *arguments)
-{
-	uint8_t dummy;
-	jtagInitPins(set_tck, set_tms, set_tdi, set_trst /*ntrst*/, pinslen);
-	jtagTapState(TAP_SHIFTIR, set_tck, set_tms);
-	if (check_data(pattern, (2 * PATTERN_LEN), set_tck, set_tdi, set_tdo, &dummy))
-		uartWriteString(NL "found pattern or other" NL);
-	else
-		uartWriteString(NL "no pattern found" NL);
-}
-
-void cmdPinlenSet(char *arguments)
-{
-	pinslen = atoi(arguments);
-	if (pinslen > 32)
-	{
-		uartWriteString(NL "Value too high. Max 32!" NL);
-		uartWriteString(NL "PINSEL set to 32" NL);
-		pinslen = 32;
-	}
-	else
-	{
-		uartWriteString(NL "Pinlen set!" NL);
-	}
-}
-
-void cmdTckSet(char *arguments)
-{
-	set_tck = atoi(arguments);
-	if (set_tck > 32)
-	{
-		uartWriteString("Value too high. Max 32!" NL);
-		uartWriteString(NL "TCK set to 32" NL);
-		set_tck = 32;
-	}
-}
-
-void cmdTmsSet(char *arguments)
-{
-	set_tms = atoi(arguments);
-	if (set_tms > 32)
-	{
-		uartWriteString(NL "Value too high. Max 32!" NL);
-		uartWriteString(NL "TMS set to 32" NL);
-		set_tms = 32;
-	}
-}
-
-void cmdTdiSet(char *arguments)
-{
-	set_tdi = atoi(arguments);
-	if (set_tdi > 32)
-	{
-		uartWriteString("Value too high. Max 32!" NL);
-		uartWriteString("TDI set to 32" NL);
-		set_tdi = 32;
-	}
-}
-
-void cmdTdoSet(char *arguments)
-{
-	set_tdo = atoi(arguments);
-	if (set_tdo > 32)
-	{
-		uartWriteString("Value too high. Max 32!" NL);
-		uartWriteString("TDO set to 32" NL);
-		set_tdo = 32;
-	}
-}
-
-void cmdTrstSet(char *arguments)
-{
-	set_trst = atoi(arguments);
-	if (set_trst > 32)
-	{
-		uartWriteString("Value too high. Max 32!" NL);
-		uartWriteString("TRST set to 32" NL);
-		set_trst = 32;
-	}
-}
-
-void cmdBoundaryScan(char *arguments)
-{
-	uartWriteString("pins");
-	jtagPrintPins(set_tck, set_tms, set_tdo, set_tdi, set_trst);
-	uartWriteString(NL);
-	sample(SCAN_LEN + 100, set_tck, set_tms, set_tdi, set_tdo, set_trst);
-}
-
-void cmdIrLenSet(char *arguments)
-{
-	set_ir_len = atoi(arguments);
-	if (set_ir_len > 40)
-	{
-		uartWriteString("Value too high. Max 40!" NL);
-		uartWriteString("IR_LEN set to 40" NL);
-		set_ir_len = 40;
-	}
-}
-
-void cmdIrEnum(char *arguments)
-{
-	brute_ir(SCAN_LEN, set_tck, set_tms, set_tdi, set_tdo, set_trst);
-}
-
-
-void cmdFlashsizeSet(char *arguments)
-{
-	set_ir_len = atoi(arguments);
-	uartWriteString("Caution, size is unlimited!" NL);
-}
-
-
-void cmdDelayJtag(char *arguments)
-{
-	if (*arguments == '-')
-	{
-		uartWriteString("");
-		if (jtagDelayTime != 0 && jtagDelayTime > 1000)
-			jtagDelayTime -= 1000;
-		else if (jtagDelayTime != 0 && jtagDelayTime <= 1000)
-			jtagDelayTime -= 100;
-		uartprintf("Delay microseconds: %ld" NL, jtagDelayTime);
-	}
-	else if (*arguments == '-')
-	{
-		if (jtagDelayTime < 1000)
-			jtagDelayTime += 100;
-		else
-			jtagDelayTime += 1000;
-		uartprintf("Delay microseconds: %ld" NL, jtagDelayTime);
-	}
-	else
-	{
-		jtagDelay = ~jtagDelay;
-		if (jtagDelay)
-		{
-			uartWriteString("JTAG DELAY ON" NL);
-		}
-		else
-		{
-			uartWriteString("JTAG DELAY OFF" NL);
-		}
-	}
-}
-
-
-/*
- * Check for pins that pass pattern[] between tdi and tdo
- * regardless of JTAG TAP state (tms, tck ignored).
- *
- * TDO, TDI pairs that match indicate possible shorts between
- * pins. Pins that do not match but are active might indicate
- * that the patch cable used is not shielded well enough. Run
- * the test again without the cable connected between controller
- * and target. Run with the verbose flag to examine closely.
- */
-static void cmdLoopbackCheck(char *arguments)
-{
-	int pins[2];
-
-	uartWriteString(OUTPUT_BOUNDARY_THICK "Starting loopback check..." NL);
-
-	bruteforce(pins, pinslen, 0, 2, bypassScanTest);
-
-	uartWriteString(OUTPUT_BOUNDARY_THICK);
-}
-
-
-/*
- * Shift JTAG TAP to ShiftIR state. Send pattern to TDI and check
- * for output on TDO
- */
-static void cmdPatternScan(char *arguments)
-{
-	int pins[5];
-	
-	uartprintf(NL OUTPUT_BOUNDARY "Starting scan for pattern: '%s'" NL, pattern);
-
-	bruteforce(pins, pinslen, 0, 5, patternScanTest);
-
-	uartWriteString(OUTPUT_BOUNDARY "End of JTAG brute force" NL);
-}
-
-
-/*
- * Scan TDO for IDCODE. Handle MAX_DEV_NR many devices.
- * We feed zeros into TDI and wait for the first 32 of them to come out at TDO (after n * 32 bit).
- * As IEEE 1149.1 requires bit 0 of an IDCODE to be a "1", we check this bit.
- * We record the first bit from the idcodes into bit0.
- * (oppposite to the old code).
- * If we get an IDCODE of all ones, we assume that the pins are wrong.
- */
-static void cmdIdcodeScan(char *arguments)
-{
-	int pins[5];
-
-	uartWriteString(NL OUTPUT_BOUNDARY_THICK "Starting scan for IDCODE..." NL);
-	
-	bruteforce(pins, pinslen, 0, 5, idcodeTest);
-
-	uartWriteString(NL OUTPUT_BOUNDARY_THICK);
-}
-
-static void cmdBypassScan(char *arguments)
-{
-	int pins[3];
-
-	uartWriteString(NL OUTPUT_BOUNDARY_THICK
-					"Starting shift of pattern through bypass..." NL
-					"Assumes bypass is the default DR on reset." NL
-					"Hence, no need to check for TMS. Also, currently" NL
-					"not checking for nTRST, which might not work" NL);
-	
-	bruteforce(pins, pinslen, 0, 3, bypassScanTest);
-
-	uartWriteString(OUTPUT_BOUNDARY_THICK);
 }

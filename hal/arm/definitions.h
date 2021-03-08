@@ -8,7 +8,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this\n
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.          \n
  * 
- * @authors Thomas Weber, Wolfgang Ettlinger
+ * @authors Thomas Weber, Wolfgang Ettlinger, Steffeb Robertz
  */
 #ifndef _DEFINITIONS_H
 #define _DEFINITIONS_H 
