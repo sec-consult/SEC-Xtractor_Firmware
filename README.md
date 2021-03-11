@@ -27,8 +27,9 @@ Initial version:
 
 Rolling relase:
 * Thomas Weber of [SEC Consult][1]
-* [Wolfgang Ettlinger][2] of [SEC Consult][1]
 * [Steffen Robertz][4] of [SEC Consult][1]
+# Author Emeritus
+* [Wolfgang Ettlinger][2]
 
 # Other Used Projects
 The firmware of SEC Xtractor was written from scratch with two exceptions:
